@@ -47,12 +47,12 @@ def copy_to_clipboard(password):
     root.clipboard_append(password)
     root.update()
 
-# Function to display password
+# Function to generate password
 def generate_password():
     try:
         length = int(length_entry.get())
         num_punctuations = int(specialcharacter_entry.get())
-        specific_word = specific_word_entry.get()  # Get the specific word from the entry field
+        specific_word = specific_word_entry.get()
 
         password = password_creation(length, num_punctuations, specific_word)
 
