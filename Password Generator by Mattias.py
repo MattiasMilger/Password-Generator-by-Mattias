@@ -5,6 +5,7 @@ from tkinter import messagebox
 
 # Function to create password
 def password_creation(length, num_punctuations, specific_word=""):
+    
     # Error Conditions
     if num_punctuations > length:
         raise ValueError("Number of punctuation characters cannot exceed the password length.")
@@ -50,10 +51,12 @@ def copy_to_clipboard(password):
 # Function to generate password
 def generate_password():
     try:
+        # Fetch attributes from input fields
         length = int(length_entry.get())
         num_punctuations = int(specialcharacter_entry.get())
         specific_word = specific_word_entry.get()
-
+        
+        # create password with specific attributes
         password = password_creation(length, num_punctuations, specific_word)
 
         # Create a new window
@@ -64,11 +67,9 @@ def generate_password():
         message_label = tk.Label(new_window, text=password)
         message_label.pack(pady=20)
 
-        # Create a label for the "Copied to clipboard!" message
-        message_label2 = tk.Label(new_window, text="Copied to clipboard!")
-        message_label2.pack(pady=20)
-
-        copy_to_clipboard(password)
+        # Create a button that lets you copy to clipboard
+        password_button = tk.Button(new_window, text="Copy to clipboard!", command= copy_to_clipboard(password))
+        password_button.pack(pady=20)
 
     # Error box
     except ValueError as e:
@@ -77,6 +78,10 @@ def generate_password():
 # Create the main window
 root = tk.Tk()
 root.title("Password Generator")
+
+# Create a title label
+length_label = tk.Label(root, text="Create your custom password!:")
+length_label.pack(pady=20)
 
 # Create a label to display text above the length input field
 length_label = tk.Label(root, text="Password Length:")
