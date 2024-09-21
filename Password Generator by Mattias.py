@@ -40,6 +40,16 @@ def password_creation(length, num_punctuations, specific_word=""):
 
     return final_password
 
+# Function to save password to a text file
+def save_password_to_file(password):
+    try:
+        # Open the file in append mode to add new passwords without overwriting
+        with open("generated_passwords.txt", "a") as file:
+            file.write(password + "\n")  # Add the password as a new line
+        messagebox.showinfo("Success", "Password saved to 'generated_passwords.txt'.")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to save password: {e}")
+
 # Function to copy password to clipboard
 def copy_to_clipboard(password):
     root = tk.Tk()
@@ -53,9 +63,16 @@ def generate_password():
     try:
         # Fetch attributes from input fields
         length = int(length_entry.get())
-        num_punctuations = int(specialcharacter_entry.get())
+
+        # Check if the special characters field is empty and handle accordingly
+        num_punctuations = specialcharacter_entry.get()
+        if num_punctuations == "":
+            num_punctuations = 0
+        else:
+            num_punctuations = int(num_punctuations)
+
         specific_word = specific_word_entry.get()
-        
+
         # create password with specific attributes
         password = password_creation(length, num_punctuations, specific_word)
 
@@ -68,8 +85,12 @@ def generate_password():
         message_label.pack(pady=20)
 
         # Create a button that lets you copy to clipboard
-        password_button = tk.Button(new_window, text="Copy to clipboard!", command= copy_to_clipboard(password))
+        password_button = tk.Button(new_window, text="Copy to clipboard!", command=lambda: copy_to_clipboard(password))
         password_button.pack(pady=20)
+
+        # Create a button that saves the password to a file
+        save_button = tk.Button(new_window, text="Save to file", command=lambda: save_password_to_file(password))
+        save_button.pack(pady=20)
 
     # Error box
     except ValueError as e:
@@ -80,7 +101,7 @@ root = tk.Tk()
 root.title("Password Generator")
 
 # Create a title label
-length_label = tk.Label(root, text="Create your custom password!:")
+length_label = tk.Label(root, text="Create your custom password:")
 length_label.pack(pady=20)
 
 # Create a label to display text above the length input field
@@ -92,7 +113,7 @@ length_entry = tk.Entry(root, width=30)
 length_entry.pack(pady=10)
 
 # Create a label to display text above the special character input field
-special_label = tk.Label(root, text="Number of Special Characters:")
+special_label = tk.Label(root, text="Number of Special Characters (optional):")
 special_label.pack(pady=5)
 
 # Create an input field for special characters
