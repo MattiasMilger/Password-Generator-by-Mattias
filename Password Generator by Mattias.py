@@ -52,8 +52,6 @@ def save_password_to_file(password):
 
 # Function to copy password to clipboard
 def copy_to_clipboard(password):
-    root = tk.Tk()
-    root.withdraw()
     root.clipboard_clear()
     root.clipboard_append(password)
     root.update()
@@ -73,24 +71,11 @@ def generate_password():
 
         specific_word = specific_word_entry.get()
 
-        # create password with specific attributes
+        # Create password with specific attributes
         password = password_creation(length, num_punctuations, specific_word)
 
-        # Create a new window
-        new_window = tk.Toplevel(root)
-        new_window.title("Password Generated")
-
-        # Create a label with the password
-        message_label = tk.Label(new_window, text=password)
-        message_label.pack(pady=20)
-
-        # Create a button that lets you copy to clipboard
-        password_button = tk.Button(new_window, text="Copy to clipboard!", command=lambda: copy_to_clipboard(password))
-        password_button.pack(pady=20)
-
-        # Create a button that saves the password to a file
-        save_button = tk.Button(new_window, text="Save to file", command=lambda: save_password_to_file(password))
-        save_button.pack(pady=20)
+        # Update the label with the new password
+        message_label.config(text=password)
 
     # Error box
     except ValueError as e:
@@ -101,8 +86,8 @@ root = tk.Tk()
 root.title("Password Generator")
 
 # Create a title label
-length_label = tk.Label(root, text="Create your custom password:")
-length_label.pack(pady=20)
+title_label = tk.Label(root, text="Create your custom password:")
+title_label.pack(pady=20)
 
 # Create a label to display text above the length input field
 length_label = tk.Label(root, text="Password Length:")
@@ -128,9 +113,21 @@ specific_word_label.pack(pady=5)
 specific_word_entry = tk.Entry(root, width=30)
 specific_word_entry.pack(pady=10)
 
+# Create a label to display the generated password
+message_label = tk.Label(root, text="")
+message_label.pack(pady=20)
+
 # Create a button to generate the password
 password_button = tk.Button(root, text="Create Password", command=generate_password)
 password_button.pack(pady=20)
+
+# Create a button that lets you copy to clipboard
+copy_button = tk.Button(root, text="Copy to clipboard!", command=lambda: copy_to_clipboard(message_label.cget("text")))
+copy_button.pack(pady=10)
+
+# Create a button that saves the password to a file
+save_button = tk.Button(root, text="Save to file", command=lambda: save_password_to_file(message_label.cget("text")))
+save_button.pack(pady=10)
 
 # Run the application
 root.mainloop()
