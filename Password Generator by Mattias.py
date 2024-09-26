@@ -4,37 +4,37 @@ import tkinter as tk
 from tkinter import messagebox
 
 # Function to create password
-def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word=""):
+def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="", randomize_length=False):
     
-    # Error Conditions
-    if num_punctuations + num_digits + num_capitals > length:
-        raise ValueError("Number of punctuation, digit, and capital letter characters cannot exceed the password length.")
-    elif length > 99:
+    # Calculate minimum required length
+    min_required_length = num_punctuations + num_digits + num_capitals + len(specific_word)
+    
+    # If randomizing length, adjust it to fit the required components
+    if randomize_length and length < min_required_length:
+        length = min_required_length
+    
+    # If length is user-specified, raise an error if it's too short
+    if not randomize_length and length < min_required_length:
+        raise ValueError(f"Password length is too short. Minimum length required: {min_required_length}.")
+    
+    # Check for max length
+    if length > 99:
         raise ValueError("Maximum password length = 99.")
-    elif len(specific_word) > length - num_punctuations - num_digits - num_capitals:
-        raise ValueError("The specific word is too long to fit in the password.")
 
-    # Subtract the length of the specific word from the available length for random characters
+    # Calculate the number of lowercase letters
     num_ascii_lowercase = length - num_punctuations - num_digits - num_capitals - len(specific_word)
 
     # Generate random lowercase ASCII letters
     random_lowercase = ''.join(secrets.choice(string.ascii_lowercase) for _ in range(num_ascii_lowercase))
 
-    # Generate random capital letters only if num_capitals > 0
-    if num_capitals > 0:
-        capitals = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(num_capitals))
-    else:
-        capitals = ""
+    # Generate random capital letters
+    capitals = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(num_capitals))
 
-    # Generate random digits only if num_digits > 0
-    if num_digits > 0:
-        digits = ''.join(secrets.choice(string.digits) for _ in range(num_digits))
-    else:
-        digits = ""
+    # Generate random digits
+    digits = ''.join(secrets.choice(string.digits) for _ in range(num_digits))
 
-    # Add special characters
-    punctuations = string.punctuation
-    special_characters = ''.join(secrets.choice(punctuations) for _ in range(num_punctuations))
+    # Generate special characters
+    special_characters = ''.join(secrets.choice(string.punctuation) for _ in range(num_punctuations))
 
     # Combine the random parts: lowercase letters, capitals, digits, and special characters
     password_list = list(random_lowercase + capitals + digits + special_characters)
@@ -76,9 +76,13 @@ def generate_password():
         num_digits = digits_entry.get()
         num_capitals = capitals_entry.get()
 
+        # Check if we should randomize length
+        randomize_length = False
+
         # If fields are left empty, assign random values
         if length == "":
             length = secrets.choice(range(8, 21))  # Random password length between 8 and 20 characters
+            randomize_length = True  # Set the flag to randomize length if required
         else:
             length = int(length)
 
@@ -100,7 +104,7 @@ def generate_password():
         specific_word = specific_word_entry.get()
 
         # Create password with specific attributes
-        password = password_creation(length, num_punctuations, num_digits, num_capitals, specific_word)
+        password = password_creation(length, num_punctuations, num_digits, num_capitals, specific_word, randomize_length)
 
         # Update the label with the new password
         message_label.config(text=password)
