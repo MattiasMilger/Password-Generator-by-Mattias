@@ -2,27 +2,34 @@ import secrets
 import string
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import filedialog
 import json
 
 # Function to create password
 def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="", randomize_length=False):
     min_required_length = num_punctuations + num_digits + num_capitals + len(specific_word)
     
+# increase password length if it's too short
     if randomize_length and length < min_required_length:
         length = min_required_length
     
+# Raise error if password length is shorter than configuration allows
     if not randomize_length and length < min_required_length:
         raise ValueError(f"Password length is too short. Minimum length required: {min_required_length}.")
     
+# Raise error if length is longer than 200
     if length > 200:
         raise ValueError("Maximum password length = 200.")
 
+# sets lowercase amount of letters to length - other letters
     num_ascii_lowercase = length - num_punctuations - num_digits - num_capitals - len(specific_word)
+# randomize each category of letters based on configuration
     random_lowercase = ''.join(secrets.choice(string.ascii_lowercase) for _ in range(num_ascii_lowercase))
     capitals = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(num_capitals))
     digits = ''.join(secrets.choice(string.digits) for _ in range(num_digits))
     special_characters = ''.join(secrets.choice(string.punctuation) for _ in range(num_punctuations))
     
+#shuffle letters and return final password
     password_list = list(random_lowercase + capitals + digits + special_characters)
     secrets.SystemRandom().shuffle(password_list)
     random_index = secrets.SystemRandom().randint(0, len(password_list))
@@ -45,7 +52,7 @@ def copy_to_clipboard(password):
     root.clipboard_append(password)
     root.update()
 
-# Function to save configuration
+# Function to save configuration to a user-selected file
 def save_configuration():
     config = {
         "length": length_entry.get(),
@@ -54,38 +61,46 @@ def save_configuration():
         "num_capitals": capitals_entry.get(),
         "specific_word": specific_word_entry.get()
     }
-    try:
-        with open("config.txt", "w") as file:
-            json.dump(config, file)
-        messagebox.showinfo("Success", "Configuration saved to 'config.txt'.")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to save configuration: {e}")
+# Set file path and type
+    file_path = filedialog.asksaveasfilename(defaultextension=".json", 
+                                             filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
+# Message popup when saving file
+    if file_path:
+        try:
+            with open(file_path, "w") as file:
+                json.dump(config, file)
+            messagebox.showinfo("Success", f"Configuration saved to '{file_path}'.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save configuration: {e}")
 
-# Function to load configuration
+# Function to load configuration from a user-selected file
 def load_configuration():
-    try:
-        with open("config.txt", "r") as file:
-            config = json.load(file)
-        
-        # Set the loaded values to the input fields
-        length_entry.delete(0, tk.END)
-        length_entry.insert(0, config.get("length", ""))
-        
-        specialcharacter_entry.delete(0, tk.END)
-        specialcharacter_entry.insert(0, config.get("num_punctuations", ""))
-        
-        digits_entry.delete(0, tk.END)
-        digits_entry.insert(0, config.get("num_digits", ""))
-        
-        capitals_entry.delete(0, tk.END)
-        capitals_entry.insert(0, config.get("num_capitals", ""))
-        
-        specific_word_entry.delete(0, tk.END)
-        specific_word_entry.insert(0, config.get("specific_word", ""))
-        
-        messagebox.showinfo("Success", "Configuration loaded from 'config.txt'.")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to load configuration: {e}")
+    file_path = filedialog.askopenfilename(filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
+    if file_path:
+        try:
+            with open(file_path, "r") as file:
+                config = json.load(file)
+            
+            # Set the loaded values to the input fields
+            length_entry.delete(0, tk.END)
+            length_entry.insert(0, config.get("length", ""))
+            
+            specialcharacter_entry.delete(0, tk.END)
+            specialcharacter_entry.insert(0, config.get("num_punctuations", ""))
+            
+            digits_entry.delete(0, tk.END)
+            digits_entry.insert(0, config.get("num_digits", ""))
+            
+            capitals_entry.delete(0, tk.END)
+            capitals_entry.insert(0, config.get("num_capitals", ""))
+            
+            specific_word_entry.delete(0, tk.END)
+            specific_word_entry.insert(0, config.get("specific_word", ""))
+            
+# Message popup when loading file
+            messagebox.showinfo("Success", f"Configuration loaded from '{file_path}'.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load configuration: {e}")
 
 # Function to generate password
 def generate_password():
@@ -95,6 +110,7 @@ def generate_password():
         num_digits = digits_entry.get()
         num_capitals = capitals_entry.get()
 
+# Generate length based on configuration
         randomize_length = False
         if length == "":
             length = secrets.choice(range(8, 21))
@@ -102,26 +118,32 @@ def generate_password():
         else:
             length = int(length)
 
+# Generate special letters based on configuration
         if num_punctuations == "":
             num_punctuations = secrets.choice(range(0, length // 4 + 1))
         else:
             num_punctuations = int(num_punctuations)
 
+# Generate digits based on configuration
         if num_digits == "":
             num_digits = secrets.choice(range(0, length // 4 + 1))
         else:
             num_digits = int(num_digits)
 
+# Generate capital letters based on configuration
         if num_capitals == "":
             num_capitals = secrets.choice(range(0, length // 4 + 1))
         else:
             num_capitals = int(num_capitals)
 
+# Add specific word
         specific_word = specific_word_entry.get()
 
+# Finalize password
         password = password_creation(length, num_punctuations, num_digits, num_capitals, specific_word, randomize_length)
         message_label.config(text=password)
 
+# Error popup
     except ValueError as e:
         messagebox.showerror("Error", str(e))
 
