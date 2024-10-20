@@ -5,7 +5,25 @@ from tkinter import messagebox, filedialog
 import json
 import os
 
-STARTUP_CONFIG_FILE = "startup_config.json"
+# Constants for file paths and limits
+PASSWORD_FILE = "generated_passwords.txt"
+MAX_PASSWORD_LENGTH = 200
+ERROR_MESSAGES = {
+    "short_password": "Password length is too short. Minimum length required: {}.",
+    "max_password_length": f"Maximum password length = {MAX_PASSWORD_LENGTH}.",
+    "no_password_to_save": "No password to save.",
+    "no_password_to_copy": "No password to copy.",
+    "file_save_failed": "Failed to save password: {}",
+    "config_save_failed": "Failed to save configuration: {}",
+    "config_load_failed": "Failed to load configuration: {}",
+}
+
+# Helper function to display messages
+def show_message(title, message, msg_type="info"):
+    if msg_type == "info":
+        messagebox.showinfo(title, message)
+    elif msg_type == "error":
+        messagebox.showerror(title, message)
 
 # Function to create password
 def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="", randomize_length=False):
@@ -14,9 +32,9 @@ def password_creation(length, num_punctuations, num_digits, num_capitals, specif
     if randomize_length and length < min_required_length:
         length = min_required_length
     if not randomize_length and length < min_required_length:
-        raise ValueError(f"Password length is too short. Minimum length required: {min_required_length}.")
-    if length > 200:
-        raise ValueError("Maximum password length = 200.")
+        raise ValueError(ERROR_MESSAGES["short_password"].format(min_required_length))
+    if length > MAX_PASSWORD_LENGTH:
+        raise ValueError(ERROR_MESSAGES["max_password_length"])
 
     num_ascii_lowercase = length - num_punctuations - num_digits - num_capitals - len(specific_word)
 
@@ -35,24 +53,24 @@ def password_creation(length, num_punctuations, num_digits, num_capitals, specif
 # Function to save password to a text file
 def save_password_to_file(password):
     if not password:
-        messagebox.showerror("Error", "No password to save.")
+        show_message("Error", ERROR_MESSAGES["no_password_to_save"], "error")
         return
     try:
-        with open("generated_passwords.txt", "a") as file:
+        with open(PASSWORD_FILE, "a") as file:
             file.write(password + "\n")
-        messagebox.showinfo("Success", "Password saved to 'generated_passwords.txt'.")
+        show_message("Success", f"Password saved to '{PASSWORD_FILE}'.")
     except Exception as e:
-        messagebox.showerror("Error", f"Failed to save password: {e}")
+        show_message("Error", ERROR_MESSAGES["file_save_failed"].format(e), "error")
 
 # Function to copy password to clipboard
 def copy_to_clipboard(password):
     if not password:
-        messagebox.showerror("Error", "No password to copy.")
+        show_message("Error", ERROR_MESSAGES["no_password_to_copy"], "error")
         return
     root.clipboard_clear()
     root.clipboard_append(password)
     root.update()
-    messagebox.showinfo("Success", "Password copied to clipboard.")
+    show_message("Success", "Password copied to clipboard.")
 
 # Function to save configuration to a file
 def save_configuration(file_path):
@@ -67,9 +85,9 @@ def save_configuration(file_path):
         try:
             with open(file_path, "w") as file:
                 json.dump(config, file)
-            messagebox.showinfo("Success", f"Configuration saved to '{file_path}'.")
+            show_message("Success", f"Configuration saved to '{file_path}'.")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save configuration: {e}")
+            show_message("Error", ERROR_MESSAGES["config_save_failed"].format(e), "error")
 
 # Function to load configuration from a file
 def load_configuration(file_path):
@@ -79,22 +97,17 @@ def load_configuration(file_path):
                 config = json.load(file)
 
             # Set the loaded values to the input fields
-            length_entry.delete(0, tk.END)
-            length_entry.insert(0, config.get("length", ""))
-            specialcharacter_entry.delete(0, tk.END)
-            specialcharacter_entry.insert(0, config.get("num_punctuations", ""))
-            digits_entry.delete(0, tk.END)
-            digits_entry.insert(0, config.get("num_digits", ""))
-            capitals_entry.delete(0, tk.END)
-            capitals_entry.insert(0, config.get("num_capitals", ""))
-            specific_word_entry.delete(0, tk.END)
-            specific_word_entry.insert(0, config.get("specific_word", ""))
+            for entry, value in zip(
+                    [length_entry, specialcharacter_entry, digits_entry, capitals_entry, specific_word_entry],
+                    [config.get("length", ""), config.get("num_punctuations", ""), config.get("num_digits", ""),
+                     config.get("num_capitals", ""), config.get("specific_word", "")]):
+                entry.delete(0, tk.END)
+                entry.insert(0, value)
 
-            messagebox.showinfo("Success", f"Configuration loaded from '{file_path}'.")
+            show_message("Success", f"Configuration loaded from '{file_path}'.")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to load configuration: {e}")
+            show_message("Error", ERROR_MESSAGES["config_load_failed"].format(e), "error")
 
-# Function to generate password
 def generate_password():
     try:
         length = length_entry.get()
@@ -112,36 +125,22 @@ def generate_password():
         num_capitals = int(num_capitals) if num_capitals else secrets.choice(range(0, length // 4 + 1))
 
         password = password_creation(length, num_punctuations, num_digits, num_capitals, specific_word, randomize_length)
-        message_label.config(text=password)
+        
+        # Enable the text box, update it with the password, and disable it again
+        message_box.config(state="normal")
+        message_box.delete(1.0, tk.END)  # Clear previous content
+        message_box.insert(tk.END, password)
+        message_box.config(state="disabled")
         
     except ValueError as e:
         messagebox.showerror("Error", str(e))
 
-# Function to save the current configuration as the startup configuration
-def save_startup_config():
-    save_configuration(STARTUP_CONFIG_FILE)
-
-# Function to reset the startup configuration (delete the file)
-def reset_startup_config():
-    try:
-        if os.path.exists(STARTUP_CONFIG_FILE):
-            os.remove(STARTUP_CONFIG_FILE)
-        messagebox.showinfo("Success", "Startup configuration reset.")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to reset startup configuration: {e}")
-
-# Load the startup configuration on app startup (if it exists)
-def load_startup_config():
-    if os.path.exists(STARTUP_CONFIG_FILE):
-        load_configuration(STARTUP_CONFIG_FILE)
-
 # Function to reset all input fields
 def reset_fields():
-    length_entry.delete(0, tk.END)
-    specialcharacter_entry.delete(0, tk.END)
-    digits_entry.delete(0, tk.END)
-    capitals_entry.delete(0, tk.END)
-    specific_word_entry.delete(0, tk.END)
+    for entry in [length_entry, specialcharacter_entry, digits_entry, capitals_entry, specific_word_entry]:
+        entry.delete(0, tk.END)
+    for text in [message_box]:
+        text.delete(0, tk.END)
     message_label.config(text="")  # Clear the generated password display as well
 
 # Function to exit the application
@@ -181,8 +180,9 @@ specific_word_label.pack(pady=5)
 specific_word_entry = tk.Entry(root, width=30)
 specific_word_entry.pack(pady=10)
 
-message_label = tk.Label(root, text="")
-message_label.pack(pady=20)
+message_box = tk.Text(root, height=2, width=50)
+message_box.pack(pady=20)
+message_box.config(state="disabled")  # Set it to read-only initially
 
 # Button Group 1: Create Password, Copy to Clipboard, Reset Fields
 button_group1 = tk.Frame(root)
@@ -201,33 +201,20 @@ reset_fields_button.pack(side=tk.LEFT, padx=5)
 button_group2 = tk.Frame(root)
 button_group2.pack(pady=10)
 
+load_config_button = tk.Button(button_group2, text="Load Configuration", command=lambda: load_configuration(filedialog.askopenfilename(filetypes=[("JSON files", "*.json"), ("All files", "*.*")])) )
+load_config_button.pack(side=tk.LEFT, padx=5)
+
+save_config_button = tk.Button(button_group2, text="Save Configuration", command=lambda: save_configuration(filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])) )
+save_config_button.pack(side=tk.LEFT, padx=5)
+
 save_button = tk.Button(button_group2, text="Save Password to File", command=lambda: save_password_to_file(message_label.cget("text")))
 save_button.pack(side=tk.LEFT, padx=5)
 
-save_config_button = tk.Button(button_group2, text="Save Configuration", command=lambda: save_configuration(filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])))
-save_config_button.pack(side=tk.LEFT, padx=5)
-
-load_config_button = tk.Button(button_group2, text="Load Configuration", command=lambda: load_configuration(filedialog.askopenfilename(filetypes=[("JSON files", "*.json"), ("All files", "*.*")])))
-load_config_button.pack(side=tk.LEFT, padx=5)
-
-# Button Group 3: Save Startup Config, Reset Startup Config
-button_group3 = tk.Frame(root)
-button_group3.pack(pady=10)
-
-save_startup_config_button = tk.Button(button_group3, text="Save Startup Config", command=save_startup_config)
-save_startup_config_button.pack(side=tk.LEFT, padx=5)
-
-reset_startup_config_button = tk.Button(button_group3, text="Reset Startup Config", command=reset_startup_config)
-reset_startup_config_button.pack(side=tk.LEFT, padx=5)
-
-# Button Group 4: Exit Application
+# Button Group 3: Exit Application
 button_group4 = tk.Frame(root)
 button_group4.pack(pady=20)
 
 exit_button = tk.Button(button_group4, text="Exit", command=exit_application)
 exit_button.pack(pady=5)
-
-# Load the startup configuration when the app starts
-load_startup_config()
 
 root.mainloop()
