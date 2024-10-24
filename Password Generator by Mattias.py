@@ -191,7 +191,7 @@ button_group1.pack(pady=10)
 password_button = tk.Button(button_group1, text="Create Password", command=generate_password)
 password_button.pack(side=tk.LEFT, padx=5)
 
-copy_button = tk.Button(button_group1, text="Copy to clipboard", command=lambda: copy_to_clipboard(message_label.cget("text")))
+copy_button = tk.Button(button_group1, text="Copy to clipboard", command=lambda: copy_to_clipboard(message_box.get("1.0", tk.END).strip()))
 copy_button.pack(side=tk.LEFT, padx=5)
 
 reset_fields_button = tk.Button(button_group1, text="Reset Fields", command=reset_fields)
@@ -207,7 +207,8 @@ load_config_button.pack(side=tk.LEFT, padx=5)
 save_config_button = tk.Button(button_group2, text="Save Configuration", command=lambda: save_configuration(filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])) )
 save_config_button.pack(side=tk.LEFT, padx=5)
 
-save_button = tk.Button(button_group2, text="Save Password to File", command=lambda: save_password_to_file(message_label.cget("text")))
+save_button = tk.Button(button_group2, text="Save Password to File", command=lambda: save_password_to_file(message_box.get("1.0", tk.END).strip()))
+
 save_button.pack(side=tk.LEFT, padx=5)
 
 # Button Group 3: Exit Application
