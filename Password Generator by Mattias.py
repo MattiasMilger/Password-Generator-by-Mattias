@@ -8,6 +8,7 @@ import os
 # Constants for file paths and limits
 PASSWORD_FILE = "generated_passwords.txt"
 MAX_PASSWORD_LENGTH = 200
+MAX_PASSWORD_SAVES = 200
 ERROR_MESSAGES = {
     "short_password": "Password length is too short. Minimum length required: {}.",
     "max_password_length": f"Maximum password length = {MAX_PASSWORD_LENGTH}.",
@@ -16,6 +17,7 @@ ERROR_MESSAGES = {
     "file_save_failed": "Failed to save password: {}",
     "config_save_failed": "Failed to save configuration: {}",
     "config_load_failed": "Failed to load configuration: {}",
+    "max_password_saves": f"Cannot save more than {MAX_PASSWORD_SAVES} passwords at once."
 }
 
 # Helper function to display messages
@@ -51,14 +53,21 @@ def password_creation(length, num_punctuations, num_digits, num_capitals, specif
     return ''.join(password_list)
 
 # Function to save password to a text file
-def save_password_to_file(password):
-    if not password:
-        show_message("Error", ERROR_MESSAGES["no_password_to_save"], "error")
+def save_password_to_file(password, count=1):
+    if count > MAX_PASSWORD_SAVES:
+        show_message("Error", ERROR_MESSAGES["max_password_saves"], "error")
         return
+    
     try:
         with open(PASSWORD_FILE, "a") as file:
-            file.write(password + "\n")
-        show_message("Success", f"Password saved to '{PASSWORD_FILE}'.")
+            for _ in range(count):
+                file.write(password_creation(length=int(length_entry.get()) if length_entry.get() else secrets.choice(range(8, 21)),
+                                             num_punctuations=int(specialcharacter_entry.get()) if specialcharacter_entry.get() else secrets.choice(range(0, int(length_entry.get() or 12) // 4 + 1)),
+                                             num_digits=int(digits_entry.get()) if digits_entry.get() else secrets.choice(range(0, int(length_entry.get() or 12) // 4 + 1)),
+                                             num_capitals=int(capitals_entry.get()) if capitals_entry.get() else secrets.choice(range(0, int(length_entry.get() or 12) // 4 + 1)),
+                                             specific_word=specific_word_entry.get() or "",
+                                             randomize_length=not length_entry.get()) + "\n")
+        show_message("Success", f"{count} password(s) saved to '{PASSWORD_FILE}'.")
     except Exception as e:
         show_message("Error", ERROR_MESSAGES["file_save_failed"].format(e), "error")
 
@@ -79,7 +88,8 @@ def save_configuration(file_path):
         "num_punctuations": specialcharacter_entry.get(),
         "num_digits": digits_entry.get(),
         "num_capitals": capitals_entry.get(),
-        "specific_word": specific_word_entry.get()
+        "specific_word": specific_word_entry.get(),
+        "num_saves": num_saves_entry.get()
     }
     if file_path:
         try:
@@ -98,9 +108,9 @@ def load_configuration(file_path):
 
             # Set the loaded values to the input fields
             for entry, value in zip(
-                    [length_entry, specialcharacter_entry, digits_entry, capitals_entry, specific_word_entry],
+                    [length_entry, specialcharacter_entry, digits_entry, capitals_entry, specific_word_entry, num_saves_entry],
                     [config.get("length", ""), config.get("num_punctuations", ""), config.get("num_digits", ""),
-                     config.get("num_capitals", ""), config.get("specific_word", "")]):
+                     config.get("num_capitals", ""), config.get("specific_word", ""), config.get("num_saves", "")]):
                 entry.delete(0, tk.END)
                 entry.insert(0, value)
 
@@ -126,22 +136,17 @@ def generate_password():
 
         password = password_creation(length, num_punctuations, num_digits, num_capitals, specific_word, randomize_length)
         
-        # Enable the text box, update it with the password, and disable it again
-        message_box.config(state="normal")
-        message_box.delete(1.0, tk.END)  # Clear previous content
+        message_box.delete(1.0, tk.END)  
         message_box.insert(tk.END, password)
-        message_box.config(state="disabled")
         
     except ValueError as e:
         messagebox.showerror("Error", str(e))
 
 # Function to reset all input fields
 def reset_fields():
-    for entry in [length_entry, specialcharacter_entry, digits_entry, capitals_entry, specific_word_entry]:
+    for entry in [length_entry, specialcharacter_entry, digits_entry, capitals_entry, specific_word_entry, num_saves_entry]:
         entry.delete(0, tk.END)
-    for text in [message_box]:
-        text.delete(0, tk.END)
-    message_label.config(text="")  # Clear the generated password display as well
+    message_box.delete("1.0", tk.END)
 
 # Function to exit the application
 def exit_application():
@@ -152,44 +157,44 @@ root = tk.Tk()
 root.title("Password Generator")
 
 # User interface setup
-title_label = tk.Label(root, text="Create your custom password:")
-title_label.pack(pady=20)
-
-length_label = tk.Label(root, text="Password Length (leave empty for random):")
+length_label = tk.Label(root, text="Password Length:")
 length_label.pack(pady=5)
 length_entry = tk.Entry(root, width=30)
 length_entry.pack(pady=10)
 
-special_label = tk.Label(root, text="Number of Special Characters (leave empty for random):")
+special_label = tk.Label(root, text="Number of Special Characters:")
 special_label.pack(pady=5)
 specialcharacter_entry = tk.Entry(root, width=30)
 specialcharacter_entry.pack(pady=10)
 
-digits_label = tk.Label(root, text="Number of Digits (leave empty for random):")
+digits_label = tk.Label(root, text="Number of Digits:")
 digits_label.pack(pady=5)
 digits_entry = tk.Entry(root, width=30)
 digits_entry.pack(pady=10)
 
-capitals_label = tk.Label(root, text="Number of Capital Letters (leave empty for random):")
+capitals_label = tk.Label(root, text="Number of Capital Letters:")
 capitals_label.pack(pady=5)
 capitals_entry = tk.Entry(root, width=30)
 capitals_entry.pack(pady=10)
 
-specific_word_label = tk.Label(root, text="Specific Word (optional):")
+specific_word_label = tk.Label(root, text="Specific Word:")
 specific_word_label.pack(pady=5)
 specific_word_entry = tk.Entry(root, width=30)
 specific_word_entry.pack(pady=10)
 
-message_box = tk.Text(root, height=2, width=50)
-message_box.pack(pady=20)
-message_box.config(state="disabled")  # Set it to read-only initially
+# Display field for generated password
+message_box = tk.Text(height=3, width=37, bg="#4a4a4a", fg="#ffffff")
+message_box.pack(pady=15)
 
-# Button Group 1: Create Password, Copy to Clipboard, Reset Fields
+# Button for creating password in its own group
+password_group = tk.Frame(root)
+password_group.pack(pady=5)
+password_button = tk.Button(password_group, text="Create Password", command=generate_password)
+password_button.pack()
+
+# Button Group 1: Copy to Clipboard, Reset Fields
 button_group1 = tk.Frame(root)
 button_group1.pack(pady=10)
-
-password_button = tk.Button(button_group1, text="Create Password", command=generate_password)
-password_button.pack(side=tk.LEFT, padx=5)
 
 copy_button = tk.Button(button_group1, text="Copy to clipboard", command=lambda: copy_to_clipboard(message_box.get("1.0", tk.END).strip()))
 copy_button.pack(side=tk.LEFT, padx=5)
@@ -197,7 +202,7 @@ copy_button.pack(side=tk.LEFT, padx=5)
 reset_fields_button = tk.Button(button_group1, text="Reset Fields", command=reset_fields)
 reset_fields_button.pack(side=tk.LEFT, padx=5)
 
-# Button Group 2: Save Password, Save Configuration, Load Configuration
+# Button Group 2: Save Configuration, Load Configuration
 button_group2 = tk.Frame(root)
 button_group2.pack(pady=10)
 
@@ -207,15 +212,20 @@ load_config_button.pack(side=tk.LEFT, padx=5)
 save_config_button = tk.Button(button_group2, text="Save Configuration", command=lambda: save_configuration(filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])) )
 save_config_button.pack(side=tk.LEFT, padx=5)
 
-save_button = tk.Button(button_group2, text="Save Password to File", command=lambda: save_password_to_file(message_box.get("1.0", tk.END).strip()))
+# New Button Group: Save Passwords to File with Count Input
+save_group = tk.Frame(root)
+save_group.pack(pady=10)
 
+num_saves_label = tk.Label(save_group, text="Number of Passwords to Save:")
+num_saves_label.pack(side=tk.LEFT)
+num_saves_entry = tk.Entry(save_group, width=5)
+num_saves_entry.pack(side=tk.LEFT, padx=5)
+
+save_button = tk.Button(save_group, text="Save Password(s) to File", command=lambda: save_password_to_file(message_box.get("1.0", tk.END).strip(), count=int(num_saves_entry.get()) if num_saves_entry.get().isdigit() else 1))
 save_button.pack(side=tk.LEFT, padx=5)
 
-# Button Group 3: Exit Application
-button_group4 = tk.Frame(root)
-button_group4.pack(pady=20)
-
-exit_button = tk.Button(button_group4, text="Exit", command=exit_application)
-exit_button.pack(pady=5)
+# Exit button
+exit_button = tk.Button(root, text="Exit", command=exit_application)
+exit_button.pack(pady=20)
 
 root.mainloop()
