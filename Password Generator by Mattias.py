@@ -195,7 +195,7 @@ message_box.pack(pady=15)
 # Button for creating password in its own group
 password_group = tk.Frame(root)
 password_group.pack(pady=5)
-password_button = tk.Button(password_group, text="Create Password", command=generate_password)
+password_button = tk.Button(password_group, height=1, width=25, text="Create Password", command=generate_password)
 password_button.pack()
 
 # Button Group 1: Copy to Clipboard, Reset Fields
