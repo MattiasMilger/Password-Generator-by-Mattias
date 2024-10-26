@@ -7,6 +7,8 @@ import os
 
 # Constants for file paths and limits
 PASSWORD_FILE = "generated_passwords.txt"
+MIN_WINDOW_WIDTH = 375
+MIN_WINDOW_HEIGHT = 665
 MAX_PASSWORD_LENGTH = 200
 MAX_PASSWORD_SAVES = 200
 ERROR_MESSAGES = {
@@ -150,11 +152,15 @@ def reset_fields():
 
 # Function to exit the application
 def exit_application():
-    root.destroy()
+    if messagebox.askyesno("Confirm Exit", "Are you sure you want to exit?"):
+        root.destroy()
 
 # Create the main window
 root = tk.Tk()
 root.title("Password Generator")
+
+# Set the minimum size of the window
+root.minsize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
 
 # User interface setup
 length_label = tk.Label(root, text="Password Length:")
@@ -214,7 +220,7 @@ save_config_button.pack(side=tk.LEFT, padx=5)
 
 # New Button Group: Save Passwords to File with Count Input
 save_group = tk.Frame(root)
-save_group.pack(pady=10)
+save_group.pack(pady=5)
 
 num_saves_label = tk.Label(save_group, text="Number of Passwords to Save:")
 num_saves_label.pack(side=tk.LEFT)
@@ -225,7 +231,7 @@ save_button = tk.Button(save_group, text="Save Password(s) to File", command=lam
 save_button.pack(side=tk.LEFT, padx=5)
 
 # Exit button
-exit_button = tk.Button(root, text="Exit", command=exit_application)
-exit_button.pack(pady=20)
+exit_button = tk.Button(root, height=1, width=30, text="Exit", command=exit_application)
+exit_button.pack(pady=15)
 
 root.mainloop()
