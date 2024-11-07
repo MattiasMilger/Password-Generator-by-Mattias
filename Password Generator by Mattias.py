@@ -26,52 +26,63 @@ def show_message(title, message, msg_type="info"):
     elif msg_type == "error":
         messagebox.showerror(title, message)
 
-# Function to create password
-def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="", randomize_length=False):
-    min_required_length = num_punctuations + num_digits + num_capitals + len(specific_word)
+# New helper function to get and validate entry values
+def get_and_validate_entry(entry, default_value=0, max_value=None):
+    value = entry.get()
+    try:
+        value = int(value) if value.isdigit() else default_value
+        if max_value and value > max_value:
+            show_message("Error", f"Value exceeds maximum of {max_value}.", "error")
+            return None
+    except ValueError:
+        show_message("Error", "Invalid input; must be a number.", "error")
+        return None
+    return value
 
-    if randomize_length and length < min_required_length:
-        length = min_required_length
-    if not randomize_length and length < min_required_length:
-        raise ValueError(ERROR_MESSAGES["short_password"].format(min_required_length))
+# Helper function to create random characters
+def create_random_characters(count, char_set):
+    return ''.join(secrets.choice(char_set) for _ in range(count))
+
+# Refactored function to create password
+def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="", randomize_length=False):
+    """Generate a random password based on specified criteria."""
+    min_required_length = num_punctuations + num_digits + num_capitals + len(specific_word)
+    
+    if randomize_length:
+        length = max(length, min_required_length)
     if length > MAX_PASSWORD_LENGTH:
         raise ValueError(ERROR_MESSAGES["max_password_length"])
 
-    num_ascii_lowercase = length - num_punctuations - num_digits - num_capitals - len(specific_word)
-
-    random_lowercase = ''.join(secrets.choice(string.ascii_lowercase) for _ in range(num_ascii_lowercase))
-    capitals = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(num_capitals))
-    digits = ''.join(secrets.choice(string.digits) for _ in range(num_digits))
-    special_characters = ''.join(secrets.choice(string.punctuation) for _ in range(num_punctuations))
+    num_ascii_lowercase = length - (num_punctuations + num_digits + num_capitals + len(specific_word))
+    
+    random_lowercase = create_random_characters(num_ascii_lowercase, string.ascii_lowercase)
+    capitals = create_random_characters(num_capitals, string.ascii_uppercase)
+    digits = create_random_characters(num_digits, string.digits)
+    special_characters = create_random_characters(num_punctuations, string.punctuation)
 
     password_list = list(random_lowercase + capitals + digits + special_characters)
+    password_list.insert(secrets.randbelow(len(password_list) + 1), specific_word)
     secrets.SystemRandom().shuffle(password_list)
-    random_index = secrets.SystemRandom().randint(0, len(password_list))
-    password_list.insert(random_index, specific_word)
     
     return ''.join(password_list)
 
-# Function to save password to a text file
+# Function to save password to a text file with confirmation
 def save_password_to_file(password, count=1):
+    """Save the password to a file, up to the specified count."""
     if count > MAX_PASSWORD_SAVES:
-        show_message("Error", ERROR_MESSAGES["max_password_saves"], "error")
-        return
-    
+        if not messagebox.askyesno("Confirm Save", f"You are about to save {count} passwords. Proceed?"):
+            return
     try:
         with open(PASSWORD_FILE, "a") as file:
             for _ in range(count):
-                file.write(password_creation(length=int(length_entry.get()) if length_entry.get() else secrets.choice(range(8, 21)),
-                                             num_punctuations=int(specialcharacter_entry.get()) if specialcharacter_entry.get() else secrets.choice(range(0, int(length_entry.get() or 12) // 4 + 1)),
-                                             num_digits=int(digits_entry.get()) if digits_entry.get() else secrets.choice(range(0, int(length_entry.get() or 12) // 4 + 1)),
-                                             num_capitals=int(capitals_entry.get()) if capitals_entry.get() else secrets.choice(range(0, int(length_entry.get() or 12) // 4 + 1)),
-                                             specific_word=specific_word_entry.get() or "",
-                                             randomize_length=not length_entry.get()) + "\n")
-        show_message("Success", f"{count} password(s) saved to '{PASSWORD_FILE}'.")
+                file.write(password + "\n")
+        show_message("Success", f"{count} password(s) saved to '{os.path.abspath(PASSWORD_FILE)}'.")
     except Exception as e:
         show_message("Error", ERROR_MESSAGES["file_save_failed"].format(e), "error")
 
 # Function to copy password to clipboard
 def copy_to_clipboard(password):
+    """Copy the password to the system clipboard."""
     if not password:
         show_message("Error", ERROR_MESSAGES["no_password_to_copy"], "error")
         return
@@ -79,21 +90,15 @@ def copy_to_clipboard(password):
     root.clipboard_append(password)
     root.update()
 
+# Function to generate password based on user input
 def generate_password():
     try:
-        length = length_entry.get()
-        num_punctuations = specialcharacter_entry.get()
-        num_digits = digits_entry.get()
-        num_capitals = capitals_entry.get()
+        length = get_and_validate_entry(length_entry, default_value=12, max_value=MAX_PASSWORD_LENGTH)
+        num_punctuations = get_and_validate_entry(specialcharacter_entry, default_value=2)
+        num_digits = get_and_validate_entry(digits_entry, default_value=2)
+        num_capitals = get_and_validate_entry(capitals_entry, default_value=2)
         specific_word = specific_word_entry.get()
-
-        randomize_length = False
-        length = int(length) if length else secrets.choice(range(8, 21))
-        randomize_length = True if length_entry.get() == "" else False
-
-        num_punctuations = int(num_punctuations) if num_punctuations else secrets.choice(range(0, length // 4 + 1))
-        num_digits = int(num_digits) if num_digits else secrets.choice(range(0, length // 4 + 1))
-        num_capitals = int(num_capitals) if num_capitals else secrets.choice(range(0, length // 4 + 1))
+        randomize_length = not length_entry.get()
 
         password = password_creation(length, num_punctuations, num_digits, num_capitals, specific_word, randomize_length)
         
@@ -101,7 +106,7 @@ def generate_password():
         message_box.insert(tk.END, password)
         
     except ValueError as e:
-        messagebox.showerror("Error", str(e))
+        show_message("Error", str(e), "error")
 
 # Function to reset all input fields
 def reset_fields():
@@ -116,9 +121,7 @@ def exit_application():
 
 # Create the main window
 root = tk.Tk()
-root.title("Password Generator")
-
-# Set the minimum size of the window
+root.title("Password Generator by Mattias")
 root.minsize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
 
 # User interface setup
@@ -176,7 +179,7 @@ num_saves_label.pack(side=tk.LEFT)
 num_saves_entry = tk.Entry(save_group, width=5)
 num_saves_entry.pack(side=tk.LEFT, padx=5)
 
-save_button = tk.Button(save_group, text="Save Password(s) to File", command=lambda: save_password_to_file(message_box.get("1.0", tk.END).strip(), count=int(num_saves_entry.get()) if num_saves_entry.get().isdigit() else 1))
+save_button = tk.Button(save_group, text="Save Password(s) to File", command=lambda: save_password_to_file(message_box.get("1.0", tk.END).strip(), count=get_and_validate_entry(num_saves_entry, default_value=1, max_value=MAX_PASSWORD_SAVES)))
 save_button.pack(side=tk.LEFT, padx=5)
 
 # Exit button
