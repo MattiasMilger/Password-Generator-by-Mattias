@@ -2,13 +2,12 @@ import secrets
 import string
 import tkinter as tk
 from tkinter import messagebox, filedialog
-import json
 import os
 
 # Constants for file paths and limits
 PASSWORD_FILE = "generated_passwords.txt"
 MIN_WINDOW_WIDTH = 375
-MIN_WINDOW_HEIGHT = 665
+MIN_WINDOW_HEIGHT = 630
 MAX_PASSWORD_LENGTH = 200
 MAX_PASSWORD_SAVES = 200
 ERROR_MESSAGES = {
@@ -17,8 +16,6 @@ ERROR_MESSAGES = {
     "no_password_to_save": "No password to save.",
     "no_password_to_copy": "No password to copy.",
     "file_save_failed": "Failed to save password: {}",
-    "config_save_failed": "Failed to save configuration: {}",
-    "config_load_failed": "Failed to load configuration: {}",
     "max_password_saves": f"Cannot save more than {MAX_PASSWORD_SAVES} passwords at once."
 }
 
@@ -81,44 +78,6 @@ def copy_to_clipboard(password):
     root.clipboard_clear()
     root.clipboard_append(password)
     root.update()
-    show_message("Success", "Password copied to clipboard.")
-
-# Function to save configuration to a file
-def save_configuration(file_path):
-    config = {
-        "length": length_entry.get(),
-        "num_punctuations": specialcharacter_entry.get(),
-        "num_digits": digits_entry.get(),
-        "num_capitals": capitals_entry.get(),
-        "specific_word": specific_word_entry.get(),
-        "num_saves": num_saves_entry.get()
-    }
-    if file_path:
-        try:
-            with open(file_path, "w") as file:
-                json.dump(config, file)
-            show_message("Success", f"Configuration saved to '{file_path}'.")
-        except Exception as e:
-            show_message("Error", ERROR_MESSAGES["config_save_failed"].format(e), "error")
-
-# Function to load configuration from a file
-def load_configuration(file_path):
-    if file_path:
-        try:
-            with open(file_path, "r") as file:
-                config = json.load(file)
-
-            # Set the loaded values to the input fields
-            for entry, value in zip(
-                    [length_entry, specialcharacter_entry, digits_entry, capitals_entry, specific_word_entry, num_saves_entry],
-                    [config.get("length", ""), config.get("num_punctuations", ""), config.get("num_digits", ""),
-                     config.get("num_capitals", ""), config.get("specific_word", ""), config.get("num_saves", "")]):
-                entry.delete(0, tk.END)
-                entry.insert(0, value)
-
-            show_message("Success", f"Configuration loaded from '{file_path}'.")
-        except Exception as e:
-            show_message("Error", ERROR_MESSAGES["config_load_failed"].format(e), "error")
 
 def generate_password():
     try:
@@ -189,7 +148,7 @@ specific_word_entry = tk.Entry(root, width=30)
 specific_word_entry.pack(pady=10)
 
 # Display field for generated password
-message_box = tk.Text(height=3, width=37, bg="#4a4a4a", fg="#ffffff")
+message_box = tk.Text(height=4, width=37, bg="#4a4a4a", fg="#ffffff")
 message_box.pack(pady=15)
 
 # Button for creating password in its own group
@@ -207,16 +166,6 @@ copy_button.pack(side=tk.LEFT, padx=5)
 
 reset_fields_button = tk.Button(button_group1, text="Reset Fields", command=reset_fields)
 reset_fields_button.pack(side=tk.LEFT, padx=5)
-
-# Button Group 2: Save Configuration, Load Configuration
-button_group2 = tk.Frame(root)
-button_group2.pack(pady=10)
-
-load_config_button = tk.Button(button_group2, text="Load Configuration", command=lambda: load_configuration(filedialog.askopenfilename(filetypes=[("JSON files", "*.json"), ("All files", "*.*")])) )
-load_config_button.pack(side=tk.LEFT, padx=5)
-
-save_config_button = tk.Button(button_group2, text="Save Configuration", command=lambda: save_configuration(filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")])) )
-save_config_button.pack(side=tk.LEFT, padx=5)
 
 # New Button Group: Save Passwords to File with Count Input
 save_group = tk.Frame(root)
