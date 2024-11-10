@@ -122,7 +122,7 @@ tk.Label(main_frame, text="Password Length:").grid(row=0, column=0, sticky="e", 
 length_entry = tk.Entry(main_frame, width=10)
 length_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
-tk.Label(main_frame, text="Special Chars:").grid(row=0, column=2, sticky="e", padx=5, pady=5)
+tk.Label(main_frame, text="Special Characters:").grid(row=0, column=2, sticky="e", padx=5, pady=5)
 specialcharacter_entry = tk.Entry(main_frame, width=10)
 specialcharacter_entry.grid(row=0, column=3, sticky="w", padx=5, pady=5)
 
@@ -140,7 +140,7 @@ tk.Label(main_frame, text="Specific Word:").grid(row=2, column=0, sticky="e", pa
 specific_word_entry = tk.Entry(main_frame, width=25)
 specific_word_entry.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
-tk.Label(main_frame, text="Num to Generate:").grid(row=2, column=2, sticky="e", padx=5, pady=5)
+tk.Label(main_frame, text="Number of passwords:").grid(row=2, column=2, sticky="e", padx=5, pady=5)
 num_saves_entry = tk.Entry(main_frame, width=10)
 num_saves_entry.grid(row=2, column=3, sticky="w", padx=5, pady=5)
 
