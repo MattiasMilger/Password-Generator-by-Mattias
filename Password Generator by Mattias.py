@@ -12,7 +12,7 @@ ERROR_MESSAGES = {
     "short_password": "Password length is too short. Minimum length required: {}.",
     "max_password_length": f"Maximum password length = {MAX_PASSWORD_LENGTH}.",
     "no_password_to_copy": "No password to copy.",
-    "wrong_input_type": "Wrong input type in field"
+    "wrong_input_type": "Invalid input format"
 }
 
 # Helper function to display messages
