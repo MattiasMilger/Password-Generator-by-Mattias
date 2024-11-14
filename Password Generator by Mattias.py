@@ -12,6 +12,7 @@ ERROR_MESSAGES = {
     "short_password": "Password length is too short. Minimum length required: {}.",
     "max_password_length": f"Maximum password length = {MAX_PASSWORD_LENGTH}.",
     "no_password_to_copy": "No password to copy.",
+    "wrong_input_type": "Wrong input type in field"
 }
 
 # Helper function to display messages
@@ -23,15 +24,18 @@ def show_message(title, message, msg_type="info"):
 
 # New helper function to get and validate entry values
 def get_and_validate_entry(entry, default_value=0, max_value=None):
-    value = entry.get()
+    value = entry.get().strip()  # Trim whitespace
+    if value == "":  # Treat empty input as default value
+        return default_value
     try:
-        value = int(value) if value.isdigit() else default_value
+        # Check if the value is an integer
+        value = int(value)
+        
+        # Validate against maximum value if specified
         if max_value and value > max_value:
-            show_message("Error", f"Value exceeds maximum of {max_value}.", "error")
             return None
     except ValueError:
-        show_message("Error", "Invalid input; must be a number.", "error")
-        return None
+        return None  # Return None if the input is not numeric
     return value
 
 # Helper function to create random characters
@@ -64,6 +68,7 @@ def password_creation(length, num_punctuations, num_digits, num_capitals, specif
 # Function to generate and display multiple passwords
 def generate_password():
     try:
+        # Retrieve and validate entries
         length = get_and_validate_entry(length_entry, default_value=12, max_value=MAX_PASSWORD_LENGTH)
         num_punctuations = get_and_validate_entry(specialcharacter_entry, default_value=2)
         num_digits = get_and_validate_entry(digits_entry, default_value=2)
@@ -72,8 +77,10 @@ def generate_password():
         randomize_length = not length_entry.get()
         num_passwords = get_and_validate_entry(num_saves_entry, default_value=1, max_value=MAX_PASSWORD_SAVES)
 
+        # Check for any validation errors
         if None in (length, num_punctuations, num_digits, num_capitals, num_passwords):
-            return  # Validation failed
+            show_message("Error", ERROR_MESSAGES["wrong_input_type"], "error")
+            return
 
         passwords = [
             password_creation(length, num_punctuations, num_digits, num_capitals, specific_word, randomize_length)
