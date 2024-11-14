@@ -12,7 +12,7 @@ ERROR_MESSAGES = {
     "short_password": "Password length is too short. Minimum length required: {}.",
     "max_password_length": f"Maximum password length = {MAX_PASSWORD_LENGTH}.",
     "no_password_to_copy": "No password to copy.",
-    "wrong_input_type": "Invalid input format"
+    "invalid_input_format": "Invalid input format"
 }
 
 # Helper function to display messages
@@ -79,7 +79,7 @@ def generate_password():
 
         # Check for any validation errors
         if None in (length, num_punctuations, num_digits, num_capitals, num_passwords):
-            show_message("Error", ERROR_MESSAGES["wrong_input_type"], "error")
+            show_message("Error", ERROR_MESSAGES["invalid_input_format"], "error")
             return
 
         passwords = [
