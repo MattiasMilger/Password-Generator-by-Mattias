@@ -88,6 +88,12 @@ def generate_password():
     except ValueError as e:
         show_message("Error", str(e), "error")
 
+# Function to copy to clipboard
+def copy_to_clipboard(password):
+    root.clipboard_clear()
+    root.clipboard_append(password)
+    root.update()
+
 # Function to reset all input fields
 def reset_fields():
     for entry in [length_entry, specialcharacter_entry, digits_entry, capitals_entry, specific_word_entry, num_saves_entry]:
