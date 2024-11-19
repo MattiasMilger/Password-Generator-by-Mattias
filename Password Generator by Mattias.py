@@ -35,21 +35,42 @@ def get_entry_value(entry, default=0, max_value=None):
 def create_random_characters(count, char_set):
     return ''.join(secrets.choice(char_set) for _ in range(count))
 
-def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="", randomize_length=False):
+def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="", randomize_length=False, disambiguate_chars=False):
     min_length = num_punctuations + num_digits + num_capitals + len(specific_word)
     length = max(length, min_length) if randomize_length else length
     if length > MAX_PASSWORD_LENGTH:
         raise ValueError(ERROR_MESSAGES["max_password_length"])
 
-    char_sets = {
-        string.ascii_lowercase: length - min_length,
-        string.ascii_uppercase: num_capitals,
-        string.digits: num_digits,
-        string.punctuation: num_punctuations,
-    }
-    password = ''.join(create_random_characters(count, char_set) for char_set, count in char_sets.items())
-    password = ''.join(secrets.SystemRandom().sample(password + specific_word, length))
+    # Calculate remaining characters for lowercase letters
+    num_lowercase = length - min_length
+
+    # Generate characters
+    lower_chars = create_random_characters(num_lowercase, string.ascii_lowercase)
+    upper_chars = create_random_characters(num_capitals, string.ascii_uppercase)
+    digit_chars = create_random_characters(num_digits, string.digits)
+    punctuation_chars = create_random_characters(num_punctuations, string.punctuation)
+
+    # Combine all characters except the specific word
+    other_chars = lower_chars + upper_chars + digit_chars + punctuation_chars
+
+    # Disambiguate characters if needed
+    if disambiguate_chars:
+        disambiguation_map = str.maketrans("Il0O", "1LQo")
+        other_chars = other_chars.translate(disambiguation_map)
+        specific_word = specific_word.translate(disambiguation_map)
+
+    # Shuffle only the other characters
+    shuffled_other_chars = ''.join(secrets.SystemRandom().sample(other_chars, len(other_chars)))
+
+    # Insert the specific word at a random position
+    insert_position = secrets.SystemRandom().randint(0, len(shuffled_other_chars))
+    password = (
+        shuffled_other_chars[:insert_position]
+        + specific_word
+        + shuffled_other_chars[insert_position:]
+    )
     return password
+
 
 def update_message_box(content):
     message_box.config(state=tk.NORMAL)
@@ -87,8 +108,10 @@ def generate_password():
             )
             return
 
+        disambiguate_chars = disambiguate.get()
+
         passwords = [
-            password_creation(length, num_punctuations, num_digits, num_capitals, specific_word, randomize_length)
+            password_creation(length, num_punctuations, num_digits, num_capitals, specific_word, randomize_length, disambiguate_chars)
             for _ in range(num_passwords)
         ]
         update_message_box("\n".join(passwords))
@@ -147,8 +170,11 @@ tk.Button(button_frame, text="Reset Fields", command=reset_fields, bg=BUTTON_COL
 
 tk.Label(main_frame, text="Generated Passwords:", bg=BACKGROUND_COLOR, fg=TEXT_COLOR).grid(row=4, column=0, sticky="ne", padx=5, pady=5)
 message_box = tk.Text(main_frame, height=8, width=40, bg=ENTRY_COLOR, fg=TEXT_COLOR, state=tk.DISABLED, insertbackground=TEXT_COLOR)
-message_box.grid(row=4, column=1, columnspan=3, sticky="w", padx=5, pady=5)
+message_box.grid(row=4, column=1, columnspan=3, sticky="nw", padx=5, pady=5)
 
-tk.Button(main_frame, text="Exit", command=root.quit, bg=BUTTON_COLOR, fg=TEXT_COLOR, width=20).grid(row=5, column=0, columnspan=4, pady=15)
+# Disambiguate Checkbox
+disambiguate = tk.BooleanVar(value=False)
+tk.Checkbutton(main_frame, text="Disambiguate Characters", variable=disambiguate, bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR).grid(row=5, column=0, columnspan=4, pady=5)
 
+# Run the App
 root.mainloop()
