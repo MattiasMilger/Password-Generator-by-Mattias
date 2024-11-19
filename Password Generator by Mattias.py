@@ -164,7 +164,7 @@ num_saves_entry.grid(row=2, column=3, sticky="w", padx=5, pady=5)
 button_frame = tk.Frame(main_frame, bg=BACKGROUND_COLOR)
 button_frame.grid(row=3, column=0, columnspan=4, pady=10)
 
-tk.Button(button_frame, text="Create Password", command=generate_password, bg=BUTTON_COLOR, fg=TEXT_COLOR, width=20).pack(side=tk.LEFT, padx=5)
+tk.Button(button_frame, text="Create Password(s)", command=generate_password, bg=BUTTON_COLOR, fg=TEXT_COLOR, width=20).pack(side=tk.LEFT, padx=5)
 tk.Button(button_frame, text="Copy to Clipboard", command=copy_to_clipboard, bg=BUTTON_COLOR, fg=TEXT_COLOR, width=15).pack(side=tk.LEFT, padx=5)
 tk.Button(button_frame, text="Reset Fields", command=reset_fields, bg=BUTTON_COLOR, fg=TEXT_COLOR, width=15).pack(side=tk.LEFT, padx=5)
 
