@@ -176,5 +176,11 @@ message_box.grid(row=4, column=1, columnspan=3, sticky="nw", padx=5, pady=5)
 disambiguate = tk.BooleanVar(value=False)
 tk.Checkbutton(main_frame, text="Disambiguate Characters", variable=disambiguate, bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR).grid(row=5, column=0, columnspan=4, pady=5)
 
+# Add Exit Button at the Bottom
+exit_button_frame = tk.Frame(main_frame, bg=BACKGROUND_COLOR)
+exit_button_frame.grid(row=6, column=0, columnspan=4, pady=10)
+
+tk.Button(exit_button_frame, text="Exit", command=root.quit, bg=BUTTON_COLOR, fg=TEXT_COLOR, width=15).pack()
+
 # Run the App
 root.mainloop()
