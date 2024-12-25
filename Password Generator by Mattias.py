@@ -5,7 +5,7 @@ from tkinter import messagebox
 
 # Constants
 MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT = 600, 390
-MAX_PASSWORD_LENGTH, MAX_PASSWORD_SAVES = 200, 200
+MAX_PASSWORD_LENGTH, MAX_PASSWORD_SAVES = 999, 999
 ERROR_MESSAGES = {
     "short_password": "Password length is too short. Minimum length required: {}.",
     "max_password_length": f"Maximum password length = {MAX_PASSWORD_LENGTH}.",
