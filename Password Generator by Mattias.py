@@ -20,93 +20,66 @@ TEXT_COLOR = "#ffffff"
 ENTRY_COLOR = "#4a4a4a"
 BUTTON_COLOR = "#3a3a3a"
 
+AMBIGUOUS_CHARS = set("Il0O1o")
+
 # Helper Functions
 def show_message(title, message, msg_type="info"):
-    """Display a message box with the given title, message, and type (info, error, etc.)."""
     getattr(messagebox, f"show{msg_type}")(title, message)
 
 def get_entry_value(entry, default=0, max_value=None):
-    """Convert entry text to an integer with validation for negatives and max value."""
     try:
         value = int(entry.get().strip() or default)
         if value < 0:
-            return None  # Will trigger negative_value error in caller
+            return None
         if max_value and value > max_value:
             return None
         return value
     except ValueError:
         return None
 
-def create_random_characters(count, char_set):
-    """Generate a string of random characters from the given set."""
-    return ''.join(secrets.choice(char_set) for _ in range(count))
+def create_random_characters(count, char_set, disambiguate=False):
+    result = []
+    while len(result) < count:
+        c = secrets.choice(char_set)
+        if disambiguate and c in AMBIGUOUS_CHARS:
+            continue
+        result.append(c)
+    return ''.join(result)
 
 def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="",
                      randomize_length=False, disambiguate_chars=False, simple_chars=False):
-    """
-    Create a random password with specified constraints.
-    
-    Args:
-        length: Total length of the password.
-        num_punctuations: Number of punctuation characters.
-        num_digits: Number of digit characters.
-        num_capitals: Number of uppercase letters.
-        specific_word: Word to include in the password.
-        randomize_length: If True, adjust length to minimum required if too short.
-        disambiguate_chars: If True, replace ambiguous characters (e.g., 'I' with '1').
-        simple_chars: If True, use only '!', '?', '.' for punctuation.
-    """
-    # Calculate minimum required length
     min_length = num_punctuations + num_digits + num_capitals + len(specific_word)
     length = max(length, min_length) if randomize_length else length
     if length > MAX_PASSWORD_LENGTH:
         raise ValueError(ERROR_MESSAGES["max_password_length"])
 
-    # Calculate remaining characters for lowercase letters
     num_lowercase = length - min_length
+    punctuation_set = ['!', '?', '.', '_', '@'] if simple_chars else string.punctuation
 
-    # Choose punctuation set based on simple_chars option
-    punctuation_set = ['!', '@', '.', '_'] if simple_chars else string.punctuation
+    lowercase_chars = create_random_characters(num_lowercase, string.ascii_lowercase, disambiguate_chars)
+    uppercase_chars = create_random_characters(num_capitals, string.ascii_uppercase, disambiguate_chars)
+    digit_chars = create_random_characters(num_digits, string.digits, disambiguate_chars)
+    punctuation_chars = create_random_characters(num_punctuations, punctuation_set, disambiguate_chars)
 
-    # Generate character pools
-    lowercase_chars = create_random_characters(num_lowercase, string.ascii_lowercase)
-    uppercase_chars = create_random_characters(num_capitals, string.ascii_uppercase)
-    digit_chars = create_random_characters(num_digits, string.digits)
-    punctuation_chars = create_random_characters(num_punctuations, punctuation_set)
-
-    # Combine all characters except the specific word
     combined_chars = lowercase_chars + uppercase_chars + digit_chars + punctuation_chars
-
-    # Disambiguate characters if requested
-    if disambiguate_chars:
-        disambiguation_map = str.maketrans("Il0O", "1LQo")
-        combined_chars = combined_chars.translate(disambiguation_map)
-        specific_word = specific_word.translate(disambiguation_map)
-
-    # Shuffle combined characters
     shuffled_chars = ''.join(secrets.SystemRandom().sample(combined_chars, len(combined_chars)))
 
-    # Insert specific word at a random position
     insert_pos = secrets.SystemRandom().randint(0, len(shuffled_chars))
     password = shuffled_chars[:insert_pos] + specific_word + shuffled_chars[insert_pos:]
     return password
 
 def update_message_box(content):
-    """Update the text box with new content and disable editing."""
     message_box.config(state=tk.NORMAL)
     message_box.delete(1.0, tk.END)
     message_box.insert(tk.END, content)
     message_box.config(state=tk.DISABLED)
 
 def reset_fields():
-    """Clear all input fields and the message box."""
     for entry in [length_entry, punctuation_entry, digits_entry, capitals_entry, specific_word_entry, num_passwords_entry]:
         entry.delete(0, tk.END)
     update_message_box("")
 
-# Main Functionality
 def generate_password():
-    """Generate one or more passwords based on user input."""
     try:
         length = get_entry_value(length_entry, 14, MAX_PASSWORD_LENGTH)
         num_punctuations = get_entry_value(punctuation_entry, 2)
@@ -116,7 +89,6 @@ def generate_password():
         randomize_length = not length_entry.get().strip()
         num_passwords = get_entry_value(num_passwords_entry, 1, MAX_PASSWORD_SAVES)
 
-        # Check for invalid (None) values from get_entry_value
         if None in (length, num_punctuations, num_digits, num_capitals, num_passwords):
             if any(get_entry_value(e) is None and e.get().strip() and int(e.get().strip() or 0) < 0 
                    for e in [length_entry, punctuation_entry, digits_entry, capitals_entry, num_passwords_entry]):
@@ -125,21 +97,14 @@ def generate_password():
                 show_message("Error", ERROR_MESSAGES["invalid_input_format"], "error")
             return
 
-        # Validate minimum length requirement
         min_required_length = num_punctuations + num_digits + num_capitals + len(specific_word)
         if length < min_required_length:
-            show_message(
-                "Error",
-                ERROR_MESSAGES["short_password"].format(min_required_length),
-                "error",
-            )
+            show_message("Error", ERROR_MESSAGES["short_password"].format(min_required_length), "error")
             return
 
-        # Get checkbox states
         disambiguate_chars = disambiguate.get()
         simple_chars = simple.get()
 
-        # Generate passwords
         passwords = [
             password_creation(length, num_punctuations, num_digits, num_capitals, specific_word,
                              randomize_length, disambiguate_chars, simple_chars)
@@ -150,7 +115,6 @@ def generate_password():
         show_message("Error", str(e), "error")
 
 def copy_to_clipboard():
-    """Copy selected text or entire message box content to clipboard."""
     selected_text = message_box.selection_get() if message_box.tag_ranges("sel") else message_box.get("1.0", tk.END).strip()
     if not selected_text:
         show_message("Error", ERROR_MESSAGES["no_password_to_copy"], "error")
@@ -158,6 +122,34 @@ def copy_to_clipboard():
     root.clipboard_clear()
     root.clipboard_append(selected_text)
     root.update()
+
+def show_info():
+    info_win = tk.Toplevel(root)
+    info_win.title("Password Generator Info")
+    info_win.configure(bg=BACKGROUND_COLOR)
+
+    tk.Label(info_win, text="Password Generator Info", bg=BACKGROUND_COLOR, fg=TEXT_COLOR,
+             font=("Arial", 14, "bold")).pack(pady=(10, 5))
+
+    msg = (
+        "🔐 **Disambiguate Mode**:\n"
+        "- Prevents ambiguous characters like I, l, 1, 0, O, o.\n"
+        "- These are re-rolled if generated randomly.\n\n"
+        "🎯 **Simple Characters Mode**:\n"
+        "- Restricts special characters to just: ! ? . _ @ \n"
+        "- Ideal for simpler systems or clearer passwords.\n\n"
+        "📏 **Default Configurations** (if left blank):\n"
+        "- Length: 14\n"
+        "- Punctuations: 2\n"
+        "- Digits: 2\n"
+        "- Capitals: 2\n"
+        "- Specific Word: (empty)\n"
+        "- Passwords Generated: 1"
+    )
+
+    tk.Message(info_win, text=msg, bg=BACKGROUND_COLOR, fg=TEXT_COLOR, width=480, font=("Arial", 10)).pack(padx=20, pady=10)
+    tk.Button(info_win, text="Close", command=info_win.destroy,
+              bg=BUTTON_COLOR, fg=TEXT_COLOR).pack(pady=10)
 
 # Tkinter Setup
 root = tk.Tk()
@@ -204,17 +196,25 @@ tk.Label(main_frame, text="Generated Passwords:", bg=BACKGROUND_COLOR, fg=TEXT_C
 message_box = tk.Text(main_frame, height=8, width=40, bg=ENTRY_COLOR, fg=TEXT_COLOR, state=tk.DISABLED, insertbackground=TEXT_COLOR)
 message_box.grid(row=4, column=1, columnspan=3, sticky="nw", padx=5, pady=5)
 
-# Checkboxes
+# Checkboxes and Info Button
+checkbox_frame = tk.Frame(main_frame, bg=BACKGROUND_COLOR)
+checkbox_frame.grid(row=5, column=0, columnspan=4, pady=5)
+
 disambiguate = tk.BooleanVar(value=False)
-tk.Checkbutton(main_frame, text="Disambiguate", variable=disambiguate, bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR).grid(row=5, column=0, columnspan=4, pady=5)
+tk.Checkbutton(checkbox_frame, text="Disambiguate", variable=disambiguate,
+               bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR).pack(side=tk.LEFT, padx=(0, 15))
 
 simple = tk.BooleanVar(value=False)
-tk.Checkbutton(main_frame, text="Simple Characters", variable=simple, bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR).grid(row=5, column=2, columnspan=4, pady=5)
+tk.Checkbutton(checkbox_frame, text="Simple Characters", variable=simple,
+               bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR).pack(side=tk.LEFT)
 
-# Add Exit Button
+tk.Button(checkbox_frame, text="Info", command=show_info,
+          bg=BUTTON_COLOR, fg=TEXT_COLOR, width=6).pack(side=tk.LEFT, padx=10)
+
+# Exit Button
 exit_button_frame = tk.Frame(main_frame, bg=BACKGROUND_COLOR)
 exit_button_frame.grid(row=6, column=0, columnspan=4, pady=10)
 tk.Button(exit_button_frame, text="Exit", command=root.quit, bg=BUTTON_COLOR, fg=TEXT_COLOR, width=15).pack()
 
-# Run the App
+# Run App
 root.mainloop()
