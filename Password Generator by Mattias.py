@@ -10,6 +10,7 @@ MAX_PASSWORD_LENGTH, MAX_PASSWORDS = 999, 999
 ERROR_MESSAGES = {
     "short_password": "Password length is too short. Minimum length required: {}.",
     "max_password_length": f"Maximum password length = {MAX_PASSWORD_LENGTH}.",
+    "max_passwords": f"Maximum number of passwords allowed is {MAX_PASSWORDS}.",
     "no_password_to_copy": "No password to copy.",
     "invalid_input_format": "Invalid input format. Please enter valid numbers.",
     "negative_value": "Values cannot be negative. Please enter 0 or higher.",
@@ -31,21 +32,20 @@ DEFAULT_CHARSETS = {
     "simple_punctuation": ['!', '?', '.', '_', '@'],
 }
 
-
 # === HELPER FUNCTIONS ===
 def show_message(title, message, msg_type="info"):
     getattr(messagebox, f"show{msg_type}")(title, message)
 
-
 def get_entry_value(entry, default=0, max_value=None):
     try:
         value = int(entry.get().strip() or default)
-        if value < 0 or (max_value and value > max_value):
-            return None
+        if value < 0:
+            raise ValueError(ERROR_MESSAGES["negative_value"])
+        if max_value and value > max_value:
+            raise ValueError(f"Value exceeds maximum allowed: {max_value}")
         return value
-    except ValueError:
-        return None
-
+    except ValueError as e:
+        raise ValueError(str(e))
 
 def create_random_characters(count, char_set, disambiguate=False):
     result = []
@@ -54,8 +54,7 @@ def create_random_characters(count, char_set, disambiguate=False):
         if disambiguate and c in AMBIGUOUS_CHARS:
             continue
         result.append(c)
-    return result  # return list instead of string for better later use
-
+    return result
 
 def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="",
                       randomize_length=False, disambiguate_chars=False, simple_chars=False):
@@ -67,7 +66,6 @@ def password_creation(length, num_punctuations, num_digits, num_capitals, specif
     num_lowercase = length - min_length
     punctuation_set = DEFAULT_CHARSETS["simple_punctuation"] if simple_chars else DEFAULT_CHARSETS["punctuation"]
 
-    # Unified generation logic
     components = [
         (num_lowercase, DEFAULT_CHARSETS["lower"]),
         (num_capitals, DEFAULT_CHARSETS["upper"]),
@@ -79,19 +77,15 @@ def password_creation(length, num_punctuations, num_digits, num_capitals, specif
     for count, charset in components:
         char_list.extend(create_random_characters(count, charset, disambiguate_chars))
 
-    # Shuffle using secrets.shuffle
     secrets.SystemRandom().shuffle(char_list)
 
-    # Insert specific word at random position
     insert_pos = secrets.randbelow(len(char_list) + 1)
     password = ''.join(char_list[:insert_pos] + list(specific_word) + char_list[insert_pos:])
     return password
 
-
 # === MAIN APP LOGIC ===
 def setup_ui(root):
     ui = {}
-
     main_frame = tk.Frame(root, padx=10, pady=10, bg=BACKGROUND_COLOR)
     main_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -115,7 +109,6 @@ def setup_ui(root):
 
     ui["main_frame"] = main_frame
     return ui
-
 
 def attach_buttons_and_misc(root, ui, disambiguate, simple, update_message_box, generate_password, reset_fields, copy_to_clipboard, show_info):
     main_frame = ui["main_frame"]
@@ -156,7 +149,6 @@ def attach_buttons_and_misc(root, ui, disambiguate, simple, update_message_box, 
     exit_button_frame.grid(row=6, column=0, columnspan=4, pady=10)
     tk.Button(exit_button_frame, text="Exit", command=root.quit, bg=BUTTON_COLOR, fg=TEXT_COLOR, width=15).pack()
 
-
 # === ENTRY POINT ===
 def run_app():
     root = tk.Tk()
@@ -190,10 +182,6 @@ def run_app():
             specific_word = ui["specific_word_entry"].get().strip()
             randomize_length = not ui["length_entry"].get().strip()
             num_passwords = get_entry_value(ui["num_passwords_entry"], 1, MAX_PASSWORDS)
-
-            if None in (length, num_punctuations, num_digits, num_capitals, num_passwords):
-                show_message("Error", ERROR_MESSAGES["invalid_input_format"], "error")
-                return
 
             min_required_length = num_punctuations + num_digits + num_capitals + len(specific_word)
             if length < min_required_length:
@@ -251,7 +239,6 @@ def run_app():
 
     attach_buttons_and_misc(root, ui, disambiguate, simple, update_message_box, generate_password, reset_fields, copy_to_clipboard, show_info)
     root.mainloop()
-
 
 # === RUN ===
 if __name__ == "__main__":
