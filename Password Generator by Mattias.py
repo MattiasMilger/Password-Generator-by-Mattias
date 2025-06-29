@@ -4,9 +4,13 @@ import tkinter as tk
 from tkinter import messagebox
 
 # === CONFIGURATION CONSTANTS ===
+# Minimum window size constants
 MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT = 600, 390
+# Maximum password length and number of passwords allowed
 MAX_PASSWORD_LENGTH, MAX_PASSWORDS = 999, 999
 
+# === ERROR MESSAGES ===
+# Centralized error messages for user feedback
 ERROR_MESSAGES = {
     "short_password": "Password length is too short. Minimum length required: {}.",
     "max_password_length": f"Maximum password length = {MAX_PASSWORD_LENGTH}.",
@@ -17,13 +21,16 @@ ERROR_MESSAGES = {
 }
 
 # === STYLE CONSTANTS ===
+# Colors used in the GUI
 BACKGROUND_COLOR = "#2b2b2b"
 TEXT_COLOR = "#ffffff"
 ENTRY_COLOR = "#4a4a4a"
 BUTTON_COLOR = "#3a3a3a"
 
 # === CHARACTER SETS ===
+# Set of ambiguous characters to avoid if disambiguation is on
 AMBIGUOUS_CHARS = set("Il0O1o")
+# Character sets for password generation
 DEFAULT_CHARSETS = {
     "lower": string.ascii_lowercase,
     "upper": string.ascii_uppercase,
@@ -34,9 +41,11 @@ DEFAULT_CHARSETS = {
 
 # === HELPER FUNCTIONS ===
 def show_message(title, message, msg_type="info"):
+    # Display a tkinter messagebox with dynamic type (info, warning, error)
     getattr(messagebox, f"show{msg_type}")(title, message)
 
 def get_entry_value(entry, default=0, max_value=None):
+    # Retrieve integer from entry with validation and fallback to default if empty
     try:
         value = int(entry.get().strip() or default)
         if value < 0:
@@ -48,6 +57,7 @@ def get_entry_value(entry, default=0, max_value=None):
         raise ValueError(str(e))
 
 def create_random_characters(count, char_set, disambiguate=False):
+    # Generate a list of random characters from a set, re-roll if disambiguation is required
     result = []
     while len(result) < count:
         c = secrets.choice(char_set)
@@ -58,6 +68,7 @@ def create_random_characters(count, char_set, disambiguate=False):
 
 def password_creation(length, num_punctuations, num_digits, num_capitals, specific_word="",
                       randomize_length=False, disambiguate_chars=False, simple_chars=False):
+    # Core logic for generating a single password with given constraints
     min_length = num_punctuations + num_digits + num_capitals + len(specific_word)
     length = max(length, min_length) if randomize_length else length
     if length > MAX_PASSWORD_LENGTH:
@@ -66,6 +77,7 @@ def password_creation(length, num_punctuations, num_digits, num_capitals, specif
     num_lowercase = length - min_length
     punctuation_set = DEFAULT_CHARSETS["simple_punctuation"] if simple_chars else DEFAULT_CHARSETS["punctuation"]
 
+    # Build character groups based on requirements
     components = [
         (num_lowercase, DEFAULT_CHARSETS["lower"]),
         (num_capitals, DEFAULT_CHARSETS["upper"]),
@@ -80,11 +92,13 @@ def password_creation(length, num_punctuations, num_digits, num_capitals, specif
     secrets.SystemRandom().shuffle(char_list)
 
     insert_pos = secrets.randbelow(len(char_list) + 1)
+    # Insert the specific word at a random position within the generated character list
     password = ''.join(char_list[:insert_pos] + list(specific_word) + char_list[insert_pos:])
     return password
 
 # === MAIN APP LOGIC ===
 def setup_ui(root):
+    # Setup the main UI layout and input fields
     ui = {}
     main_frame = tk.Frame(root, padx=10, pady=10, bg=BACKGROUND_COLOR)
     main_frame.pack(fill=tk.BOTH, expand=True)
@@ -111,18 +125,23 @@ def setup_ui(root):
     return ui
 
 def attach_buttons_and_misc(root, ui, disambiguate, simple, update_message_box, generate_password, reset_fields, copy_to_clipboard, show_info):
+    # Attach functional buttons, message box, and checkboxes to the UI
     main_frame = ui["main_frame"]
 
     button_frame = tk.Frame(main_frame, bg=BACKGROUND_COLOR)
     button_frame.grid(row=3, column=0, columnspan=4, pady=10)
 
+    # Button for generating passwords
     tk.Button(button_frame, text="Create Password(s)", command=generate_password,
               bg=BUTTON_COLOR, fg=TEXT_COLOR, width=20).pack(side=tk.LEFT, padx=5)
+    # Button for copying to clipboard
     tk.Button(button_frame, text="Copy to Clipboard", command=copy_to_clipboard,
               bg=BUTTON_COLOR, fg=TEXT_COLOR, width=15).pack(side=tk.LEFT, padx=5)
+    # Button for resetting all fields
     tk.Button(button_frame, text="Reset Fields", command=reset_fields,
               bg=BUTTON_COLOR, fg=TEXT_COLOR, width=15).pack(side=tk.LEFT, padx=5)
 
+    # Label and text box for displaying generated passwords
     tk.Label(main_frame, text="Generated Passwords:", bg=BACKGROUND_COLOR, fg=TEXT_COLOR)\
         .grid(row=4, column=0, sticky="ne", padx=5, pady=5)
 
@@ -134,6 +153,7 @@ def attach_buttons_and_misc(root, ui, disambiguate, simple, update_message_box, 
     checkbox_frame = tk.Frame(main_frame, bg=BACKGROUND_COLOR)
     checkbox_frame.grid(row=5, column=0, columnspan=4, pady=5)
 
+    # Checkboxes for disambiguate and simple characters modes
     tk.Checkbutton(checkbox_frame, text="Disambiguate", variable=disambiguate,
                    bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR)\
         .pack(side=tk.LEFT, padx=(0, 15))
@@ -142,6 +162,7 @@ def attach_buttons_and_misc(root, ui, disambiguate, simple, update_message_box, 
                    bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR)\
         .pack(side=tk.LEFT)
 
+    # Info button to show usage information
     tk.Button(checkbox_frame, text="Info", command=show_info,
               bg=BUTTON_COLOR, fg=TEXT_COLOR, width=6).pack(side=tk.LEFT, padx=10)
 
@@ -151,6 +172,7 @@ def attach_buttons_and_misc(root, ui, disambiguate, simple, update_message_box, 
 
 # === ENTRY POINT ===
 def run_app():
+    # Entry point to run the password generator application
     root = tk.Tk()
     root.title("Password Generator by Mattias")
     root.minsize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
@@ -162,18 +184,21 @@ def run_app():
     ui = setup_ui(root)
 
     def update_message_box(content):
+        # Update the message box with generated passwords
         ui["message_box"].config(state=tk.NORMAL)
         ui["message_box"].delete(1.0, tk.END)
         ui["message_box"].insert(tk.END, content)
         ui["message_box"].config(state=tk.DISABLED)
 
     def reset_fields():
+        # Reset all input fields and clear message box
         for key, entry in ui.items():
             if isinstance(entry, tk.Entry):
                 entry.delete(0, tk.END)
         update_message_box("")
 
     def generate_password():
+        # Handle the generation of passwords with current settings
         try:
             length = get_entry_value(ui["length_entry"], 14, MAX_PASSWORD_LENGTH)
             num_punctuations = get_entry_value(ui["punctuation_entry"], 2)
@@ -198,6 +223,7 @@ def run_app():
             show_message("Error", str(e), "error")
 
     def copy_to_clipboard():
+        # Copy generated passwords or selection to clipboard
         selected_text = ui["message_box"].selection_get() if ui["message_box"].tag_ranges("sel") \
             else ui["message_box"].get("1.0", tk.END).strip()
         if not selected_text:
@@ -208,6 +234,7 @@ def run_app():
         root.update()
 
     def show_info():
+        # Display an info window with app instructions and explanations
         info_win = tk.Toplevel(root)
         info_win.title("Password Generator Info")
         info_win.configure(bg=BACKGROUND_COLOR)
@@ -242,4 +269,5 @@ def run_app():
 
 # === RUN ===
 if __name__ == "__main__":
+    # Run the application if executed directly
     run_app()
