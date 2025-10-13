@@ -6,8 +6,8 @@ from tkinter import messagebox
 # === CONFIGURATION CONSTANTS ===
 # Minimum window size constants
 MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT = 600, 390
-# Maximum password length and number of passwords allowed
-MAX_PASSWORD_LENGTH, MAX_PASSWORDS = 999, 999
+# Maximum password length, number of passwords, and specific word length allowed
+MAX_PASSWORD_LENGTH, MAX_PASSWORDS, MAX_SPECIFIC_WORD_LENGTH = 999, 999, 50
 
 # === ERROR MESSAGES ===
 # Centralized error messages for user feedback
@@ -18,6 +18,7 @@ ERROR_MESSAGES = {
     "no_password_to_copy": "No password to copy.",
     "invalid_input_format": "Invalid input format. Please enter valid numbers.",
     "negative_value": "Values cannot be negative. Please enter 0 or higher.",
+    "invalid_specific_word": f"Specific word must contain only printable ASCII characters and be at most {MAX_SPECIFIC_WORD_LENGTH} characters long."
 }
 
 # === STYLE CONSTANTS ===
@@ -205,6 +206,9 @@ def run_app():
             num_digits = get_entry_value(ui["digits_entry"], 2)
             num_capitals = get_entry_value(ui["capitals_entry"], 2)
             specific_word = ui["specific_word_entry"].get().strip()
+            # Validate specific word
+            if specific_word and (len(specific_word) > MAX_SPECIFIC_WORD_LENGTH or not all(c in string.printable for c in specific_word)):
+                raise ValueError(ERROR_MESSAGES["invalid_specific_word"])
             randomize_length = not ui["length_entry"].get().strip()
             num_passwords = get_entry_value(ui["num_passwords_entry"], 1, MAX_PASSWORDS)
 
@@ -257,7 +261,8 @@ def run_app():
             "- Passwords Generated: 1\n\n"
             "🚫 **Limits**:\n"
             "- Max number of passwords: 999\n"
-            "- Max password length: 999"
+            "- Max password length: 999\n"
+            "- Max specific word length: 50"
         )
 
         tk.Message(info_win, text=msg, bg=BACKGROUND_COLOR, fg=TEXT_COLOR, width=480, font=("Arial", 10)).pack(padx=20, pady=10)
