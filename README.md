@@ -1,10 +1,6 @@
-This application is built entirely using standard Python libraries available in the Python Standard Library.
-
-----------------------------
-
 Requirements:
 
-Python 3.13 Installed
+Python 3.13 or later Installed
 
 ----------------------------
 
