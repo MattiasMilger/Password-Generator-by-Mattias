@@ -4,7 +4,7 @@ This application is built entirely using standard Python libraries available in 
 
 Requirements
 
-Python 3.x Installed
+Python 3.13 Installed
 
 Libraries:
 tkinter, secrets, string
