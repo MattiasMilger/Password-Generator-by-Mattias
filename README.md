@@ -6,9 +6,6 @@ Requirements
 
 Python 3.13 Installed
 
-Libraries:
-tkinter, secrets, string
-
 ----------------------------
 
 How to Run the App:
