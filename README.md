@@ -2,11 +2,12 @@ This application is built entirely using standard Python libraries available in 
 
 ----------------------------
 
-Requirements
+Requirements:
 
 Python 3.13 Installed
 
 ----------------------------
 
 How to Run the App:
+
 Save the entire Python code provided and run it.
