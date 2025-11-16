@@ -2,6 +2,7 @@ import secrets
 import string
 import tkinter as tk
 from tkinter import messagebox, ttk
+import math
 
 # === CONFIGURATION CONSTANTS ===
 MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT = 800, 500
@@ -17,6 +18,7 @@ ERROR_MESSAGES = {
     "max_passwords": f"Maximum number of passwords allowed is {MAX_PASSWORD_LENGTH}.",
     "no_password_to_copy": "No password to copy.",
     "invalid_specific_word": f"Specific word must be plain text (letters, numbers, symbols) and no longer than {MAX_SPECIFIC_WORD_LENGTH} characters.",
+    "no_password_selected": "Please select a password from the list to evaluate its strength."
 }
 
 # === STYLE CONSTANTS ===
@@ -98,6 +100,90 @@ def password_creation(length, num_punctuations, num_digits, num_capitals, specif
     password = ''.join(char_list[:insert_pos] + list(specific_word) + char_list[insert_pos:])
     return password
 
+# --- STRENGTH EVALUATION FUNCTION ---
+def evaluate_strength(password):
+    """
+    Calculates a simple password strength score (entropy in bits).
+    Entropy = L * log2(R), where L is length and R is the size of the character set.
+    """
+    if not password:
+        return 0, "No password provided."
+
+    length = len(password)
+    charset_size = 0
+    
+    # Check for character types present
+    has_lower = any(c in string.ascii_lowercase for c in password)
+    has_upper = any(c in string.ascii_uppercase for c in password)
+    has_digits = any(c in string.digits for c in password)
+    has_symbols = any(c in string.punctuation for c in password)
+    
+    if has_lower:
+        charset_size += len(string.ascii_lowercase) # 26
+    if has_upper:
+        charset_size += len(string.ascii_uppercase) # 26
+    if has_digits:
+        charset_size += len(string.digits) # 10
+    if has_symbols:
+        charset_size += len(string.punctuation) # 32
+        
+    if charset_size == 0:
+        return 0, "Low (No recognizable characters)."
+
+    # Shannon Entropy formula: E = L * log2(R)
+    entropy = length * math.log2(charset_size)
+
+    # Determine strength rating based on common thresholds
+    if entropy < 28:
+        rating = "Very Weak (Instantly crackable)"
+    elif entropy < 36:
+        rating = "Weak (Crackable in minutes/hours)"
+    elif entropy < 60:
+        rating = "Reasonable (Crackable in days/weeks)"
+    elif entropy < 80:
+        rating = "Strong (Crackable in months/years)"
+    else:
+        rating = "Very Strong (Crackable in decades/centuries)"
+        
+    return entropy, rating
+
+# --- UPDATED POPUP FUNCTION (SIZE CHANGE) ---
+def show_strength_popup(root, password, entropy, rating):
+    """Shows strength results in a custom Toplevel window."""
+    popup = tk.Toplevel(root)
+    popup.title("Password Strength Evaluation")
+    popup.configure(bg=BACKGROUND_COLOR)
+    # INCREASED WINDOW SIZE HERE
+    popup.geometry("450x250") 
+    popup.transient(root)  # Keep the window on top of the main window
+    popup.grab_set()       # Modal window: disables interaction with the main window
+    
+    frame = tk.Frame(popup, bg=BACKGROUND_COLOR, padx=15, pady=15)
+    frame.pack(fill="both", expand=True)
+
+    # Title
+    tk.Label(frame, text="Strength Analysis", bg=BACKGROUND_COLOR, fg="#2ecc71", font=("Arial", 12, "bold"))\
+        .pack(pady=(0, 10))
+
+    # Password
+    tk.Label(frame, text=f"Password: {password}", bg=BACKGROUND_COLOR, fg=TEXT_COLOR, font=("Consolas", 10))\
+        .pack(anchor="w")
+    
+    # Rating
+    tk.Label(frame, text=f"Rating: {rating}", bg=BACKGROUND_COLOR, fg=TEXT_COLOR, font=("Arial", 11, "bold"))\
+        .pack(anchor="w", pady=(10, 5))
+        
+    # Entropy
+    tk.Label(frame, text=f"Entropy (bits): {entropy:.2f}", bg=BACKGROUND_COLOR, fg=TEXT_COLOR, font=("Arial", 10))\
+        .pack(anchor="w")
+
+    # Close Button
+    tk.Button(frame, text="Close", command=popup.destroy, bg=BUTTON_COLOR, fg=TEXT_COLOR, width=10)\
+        .pack(pady=(15, 0))
+    
+    root.wait_window(popup) # Wait until the popup is closed
+
+
 # === MAIN APP LOGIC ===
 def setup_ui(root):
     ui = {}
@@ -126,22 +212,28 @@ def setup_ui(root):
     return ui
 
 def attach_buttons_and_passwords_display(root, ui, disambiguate, simple, update_passwords_display,
-                                         generate_password, reset_fields, copy_to_clipboard, show_info):
+                                         generate_password, reset_fields, copy_to_clipboard, 
+                                         show_info, evaluate_selected_password):
     main_frame = ui["main_frame"]
 
     # === Button Row ===
     button_frame = tk.Frame(main_frame, bg=BACKGROUND_COLOR)
     button_frame.grid(row=3, column=0, columnspan=4, pady=12, sticky="ew")
-    button_frame.columnconfigure(0, weight=1)
+    for i in range(5):
+        button_frame.columnconfigure(i, weight=1)
 
     tk.Button(button_frame, text="Create Password(s)", command=generate_password,
               bg=BUTTON_COLOR, fg=TEXT_COLOR, width=18, font=("Arial", 9, "bold")).grid(row=0, column=0, padx=5)
+    
+    tk.Button(button_frame, text="Evaluate Strength", command=evaluate_selected_password,
+              bg=BUTTON_COLOR, fg=TEXT_COLOR, width=16, font=("Arial", 9, "bold")).grid(row=0, column=1, padx=5)
+    
     tk.Button(button_frame, text="Copy Selected", command=lambda: copy_to_clipboard(selected=True),
-              bg=BUTTON_COLOR, fg=TEXT_COLOR, width=14).grid(row=0, column=1, padx=5)
-    tk.Button(button_frame, text="Copy All", command=lambda: copy_to_clipboard(selected=False),
               bg=BUTTON_COLOR, fg=TEXT_COLOR, width=14).grid(row=0, column=2, padx=5)
-    tk.Button(button_frame, text="Reset Fields", command=reset_fields,
+    tk.Button(button_frame, text="Copy All", command=lambda: copy_to_clipboard(selected=False),
               bg=BUTTON_COLOR, fg=TEXT_COLOR, width=14).grid(row=0, column=3, padx=5)
+    tk.Button(button_frame, text="Reset Fields", command=reset_fields,
+              bg=BUTTON_COLOR, fg=TEXT_COLOR, width=14).grid(row=0, column=4, padx=5)
 
     # === Passwords Display using Treeview ===
     display_frame = tk.Frame(main_frame, bg=BACKGROUND_COLOR)
@@ -176,10 +268,10 @@ def attach_buttons_and_passwords_display(root, ui, disambiguate, simple, update_
     options_frame.grid(row=5, column=0, columnspan=4, pady=8)
 
     tk.Checkbutton(options_frame, text="Disambiguate (avoid I,l,1,0,O,o)", variable=disambiguate,
-                   bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR, font=("Arial", 9))\
+                    bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR, font=("Arial", 9))\
         .pack(side=tk.LEFT, padx=(0, 20))
     tk.Checkbutton(options_frame, text="Simple Punctuation (!?._@)", variable=simple,
-                   bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR, font=("Arial", 9))\
+                    bg=BACKGROUND_COLOR, fg=TEXT_COLOR, selectcolor=BUTTON_COLOR, font=("Arial", 9))\
         .pack(side=tk.LEFT, padx=(0, 20))
     tk.Button(options_frame, text="Info", command=show_info,
               bg=BUTTON_COLOR, fg=TEXT_COLOR, width=8, font=("Arial", 9)).pack(side=tk.LEFT, padx=10)
@@ -264,6 +356,23 @@ def run_app():
         root.clipboard_clear()
         root.clipboard_append(text)
         root.update()
+        
+    def evaluate_selected_password():
+        tree = ui["passwords_tree"]
+        selection = tree.selection()
+        
+        if not selection:
+            show_message("No Selection", ERROR_MESSAGES["no_password_selected"], "warning")
+            return
+        
+        # Get the first selected password
+        selected_item = selection[0]
+        password = tree.item(selected_item, "values")[0]
+        
+        entropy, rating = evaluate_strength(password)
+        
+        # Use the custom popup to avoid system sound
+        show_strength_popup(root, password, entropy, rating)
 
     def show_info():
         info_win = tk.Toplevel(root)
@@ -272,16 +381,17 @@ def run_app():
         info_win.configure(bg=BACKGROUND_COLOR)
 
         tk.Label(info_win, text="Password Generator - Help & Info", bg=BACKGROUND_COLOR, fg=TEXT_COLOR,
-                 font=("Arial", 14, "bold")).pack(pady=(15, 8))
+                  font=("Arial", 14, "bold")).pack(pady=(15, 8))
 
         msg = (
             "How to Use:\n"
             "• Enter numbers in the fields (leave blank for defaults)\n"
             "• Only whole numbers allowed — no +, -, letters, or decimals\n\n"
             "Default Values (when blank):\n"
-            "• Length: 14 Punctuation: 2 Digits: 2 Capitals: 2\n"
-            "• Specific Word: (none) Generate: 1 password\n\n"
+            "• Length: 14\tPunctuation: 2\tDigits: 2\tCapitals: 2\n"
+            "• Specific Word: (none)\tGenerate: 1 password\n\n"
             "Features:\n"
+            "• **Evaluate Strength**: Select a password and click to see an estimated strength score (in bits of entropy).\n"
             "• Disambiguate: Avoids confusing characters (I,l,1,0,O,o)\n"
             "• Simple Punctuation: Uses only ! ? . _ @\n"
             "• Random Length: If Length is blank, uses minimum required\n\n"
@@ -305,7 +415,8 @@ def run_app():
                   bg=BUTTON_COLOR, fg=TEXT_COLOR, width=12).pack(pady=10)
 
     attach_buttons_and_passwords_display(root, ui, disambiguate, simple, update_passwords_display,
-                                         generate_password, reset_fields, copy_to_clipboard, show_info)
+                                         generate_password, reset_fields, copy_to_clipboard, 
+                                         show_info, evaluate_selected_password)
 
     # Set defaults only on first launch
     ui["length_entry"].insert(0, "14")
