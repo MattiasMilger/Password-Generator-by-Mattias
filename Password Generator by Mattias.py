@@ -275,9 +275,9 @@ def setup_menu_bar(root, toggle_theme_func, show_info_func):
     root.config(menu=menubar)
     
     # 1. Options Menu (for theme toggle)
-    options_menu = tk.Menu(menubar, tearoff=0, bg=theme["BACKGROUND"], fg=theme["FOREGROUND"])
-    menubar.add_cascade(label="Options", menu=options_menu)
-    options_menu.add_command(label="Toggle Theme (Dark/Light)", command=toggle_theme_func)
+    style_menu = tk.Menu(menubar, tearoff=0, bg=theme["BACKGROUND"], fg=theme["FOREGROUND"])
+    menubar.add_cascade(label="Style", menu=style_menu)
+    style_menu.add_command(label="Toggle Dark/Light Mode", command=toggle_theme_func)
 
     # 2. Help Menu (for info/usage)
     help_menu = tk.Menu(menubar, tearoff=0, bg=theme["BACKGROUND"], fg=theme["FOREGROUND"])
@@ -287,7 +287,7 @@ def setup_menu_bar(root, toggle_theme_func, show_info_func):
     # Store references for theme updates
     root.menubar = menubar
     root.help_menu = help_menu
-    root.options_menu = options_menu
+    root.style_menu = style_menu
 
 
 # === MAIN APP LOGIC ===
@@ -472,7 +472,7 @@ def apply_theme(root, ui, theme_name):
         # Apply theme to dropdown menus
         root.menubar.config(**menu_theme_options) 
         root.help_menu.config(**menu_theme_options)
-        root.options_menu.config(**menu_theme_options)
+        root.style_menu.config(**menu_theme_options)
 
 
 def run_app():
