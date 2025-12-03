@@ -478,7 +478,7 @@ def apply_theme(root, ui, theme_name):
 def run_app():
     """Initializes the main application window and starts the event loop."""
     root = tk.Tk()
-    root.title("Password Generator")
+    root.title("Password Generator by Mattias")
     root.minsize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
 
     # Boolean variables for options
@@ -495,26 +495,34 @@ def run_app():
         apply_theme(root, ui, new_theme)
 
     def update_passwords_display(passwords):
-        """Clears the Treeview and populates it with new generated passwords."""
+        """
+        Clears the Treeview and populates it with new generated passwords.
+        
+        Modification: If only one password is generated, it will be automatically 
+        selected (highlighted).
+        """
         tree = ui["passwords_tree"]
         for item in tree.get_children():
             tree.delete(item)
+            
+        inserted_iid = None
         for idx, pwd in enumerate(passwords, start=1):
-            tree.insert("", tk.END, iid=idx, values=(pwd,))
+            iid = tree.insert("", tk.END, iid=idx, values=(pwd,))
+            inserted_iid = iid # Keep track of the last/only iid
+
+        # If exactly one password was generated, select it
+        if len(passwords) == 1 and inserted_iid is not None:
+            tree.selection_set(inserted_iid)
+            tree.focus(inserted_iid) # Set focus to the item
 
     def reset_fields():
-        """Clear all input fields and the password list display."""
+        """
+        Clear all input fields and the password list display, leaving fields blank.
+        """
         for entry in ui.values():
             if isinstance(entry, tk.Entry):
                 entry.delete(0, tk.END)
         update_passwords_display([])
-        
-        # Re-insert default values (for user convenience)
-        ui["length_entry"].insert(0, "14")
-        ui["punctuation_entry"].insert(0, "2")
-        ui["digits_entry"].insert(0, "2")
-        ui["capitals_entry"].insert(0, "2")
-        ui["num_passwords_entry"].insert(0, "1")
 
     def generate_password():
         """Handles reading inputs, validating them, and generating passwords."""
@@ -609,14 +617,15 @@ def run_app():
             "How to Use:\n"
             "• Enter numbers in the fields (leave blank for defaults)\n"
             "• Only whole numbers allowed — no +, -, letters, or decimals\n\n"
-            "Default Values (when blank):\n"
+            "Default Values (when blank at startup/generation):\n"
             "• Length: 14\tPunctuation: 2\tDigits: 2\tCapitals: 2\n"
             "• Specific Word: (none)\tGenerate: 1 password\n\n"
             "Features:\n"
             "• **Evaluate Strength**: Select a password and click to see an estimated strength score (in bits of entropy).\n"
             "• Disambiguate: Avoids confusing characters (I,l,1,0,O,o)\n"
             "• Simple Punctuation: Uses only ! ? . _ @\n"
-            "• Random Length: If Length is blank, the length is set to the minimum required characters.\n\n"
+            "• Random Length: If Length is blank, the length is set to the minimum required characters.\n"
+            "• **Reset Fields**: Clears all input fields completely.\n\n"
             "Limits:\n"
             f"• Max passwords: {MAX_PASSWORDS}\n"
             f"• Max length: {MAX_PASSWORD_LENGTH}\n"
@@ -624,7 +633,7 @@ def run_app():
             "Tips:\n"
             "• Select passwords in the list → 'Copy Selected'\n"
             "• 'Copy All' copies every generated password\n"
-            "• 'Reset Fields' clears all inputs and re-applies defaults\n"
+            "• 'Reset Fields' clears all inputs.\n"
             "• Toggle Theme: Switches between a Dark and Light interface via the **Options** menu."
         )
 
@@ -648,7 +657,7 @@ def run_app():
     # Apply initial theme (Dark is the default)
     apply_theme(root, ui, "Dark")
     
-    # Set default values for entries
+    # Set default values for entries (Only done once at startup)
     ui["length_entry"].insert(0, "14")
     ui["punctuation_entry"].insert(0, "2")
     ui["digits_entry"].insert(0, "2")
